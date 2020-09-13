@@ -157,6 +157,7 @@
   <ItemGroup>
     <ClInclude Include="ImageBase.h" />
     <ClInclude Include="image_ppm.h" />
+    <ClInclude Include="U8ColorRGB.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

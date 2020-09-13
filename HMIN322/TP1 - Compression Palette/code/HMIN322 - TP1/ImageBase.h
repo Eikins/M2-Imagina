@@ -16,21 +16,7 @@
 #pragma once
 #include <stdio.h>
 #include <stdlib.h>
-
-struct U8ColorRGB
-{
-public:
-	unsigned char r;
-	unsigned char g;
-	unsigned char b;
-
-
-	U8ColorRGB() { r = 0; g = 0; b = 0; }
-	U8ColorRGB(int red, int green, int blue) { r = red; g = green; b = blue; }
-	int mag() { return r * r + g * g + b * b; }
-
-	bool operator==(U8ColorRGB other) { return r == other.r && g == other.g && b == other.b; }
-};
+#include "U8ColorRGB.h"
 
 class ImageBase
 {

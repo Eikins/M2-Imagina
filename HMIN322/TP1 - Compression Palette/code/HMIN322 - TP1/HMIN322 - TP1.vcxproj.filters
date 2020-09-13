@@ -29,5 +29,8 @@
     <ClInclude Include="image_ppm.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="U8ColorRGB.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
