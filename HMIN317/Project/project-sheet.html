@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>HMIN317 Moteur de jeux - Project Sheet</title>
+        <style>
+</style>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item { list-style-type: none; } .task-list-item-checkbox { margin-left: -20px; vertical-align: middle; }
+</style>
+        
+        
+        
+    </head>
+    <body class="vscode-light">
+        <h1 id="hmin317-moteur-de-jeux---project-sheet">HMIN317 Moteur de jeux - Project Sheet</h1>
+<h2 id="base-concepts">Base Concepts</h2>
+<p>My intent with this project is to create a general 3D Game Engine.
+The main features will be:</p>
+<ul>
+<li><strong>Entity Component and Entity Component System (EC/ECS)</strong> patterns</li>
+<li><strong>Asset &amp; Scene management</strong> with acceleration structures (Octree, BVH, )</li>
+<li><strong>C# Scripting</strong> implemented with the <em>Mono</em> managed code</li>
+<li><strong>Standard PBR rendering</strong> using <em>Vulkan</em></li>
+<li><strong>Editor Interface</strong>, whether with <em>dear imGui</em> or <em>Qt</em></li>
+</ul>
+<p>The features I will <strong>not</strong> cover in this project, except if I have extra time (I won't)</p>
+<ul>
+<li><strong>Networking Layer &amp; High level API</strong> with authorative server and prediction</li>
+</ul>
+<h2 id="demo-concept--gameplay">Demo Concept &amp; Gameplay</h2>
+<p>I was really astounded by the new <a href="https://www.youtube.com/watch?v=GffelVJeGws">Ratcher &amp; Clank: Rift Apart - Gameplay Demo 🔗</a></p>
+<p>I really like the new <em>Rift Traversal</em> mechanics shown at <a href="https://www.youtube.com/watch?v=GffelVJeGws&amp;t=170s"><code>2:50</code> 🔗</a> of the gameplay demo.</p>
+<p>My goal would be to reproduce this effect in a little 3D platformer demo scene, and add some mechanics from Ratcher &amp; Clanks that I find interesting to study.</p>
+<h3 id="rift-traversal">Rift Traversal</h3>
+<p><img src="img\ratchet_rift.gif" alt=""></p>
+<table>
+<thead>
+<tr>
+<th>1</th>
+<th>2</th>
+<th>3</th>
+<th>4</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="img\ratchet_rift_0.jpg" alt=""></td>
+<td><img src="img\ratchet_rift_1.jpg" alt=""></td>
+<td><img src="img\ratchet_rift_2.jpg" alt=""></td>
+<td><img src="img\ratchet_rift_3.jpg" alt=""></td>
+</tr>
+</tbody>
+</table>
+<p>The system is a bit similar to <strong>Portal</strong>'s portals.
+The difference is that we pull the rendering plan to the player, and perform a smooth teleportation to te target location.</p>
+<p>I will make a technical breakdown for this effect.</p>
+<h3 id="rails">Rails</h3>
+<p>Rails are quite common, they use a spline to move the character along them. The results are smooth and very pleasant.</p>
+<p><img src="img\ratchet_rail.jpg" alt=""></p>
+<p>I already made a <a href="https://noe.masse.pro/videos/space-shooter.mp4">rail-shooter prototype 🔗</a>.</p>
+<h3 id="gravity-boots">Gravity Boots</h3>
+<p>Gravity boots are another cool mechanics that plays with the gravity to make ratchet able to move on surfaces with a different local frame.
+<img src="img\ratchet_gravity.jpg" alt=""></p>
+<h2 id="rendering">Rendering</h2>
+<p>For the rendering tech, I choose to use Vulkan as I already master OpenGL. If the task is too heavy, I'll switch back to OpenGL.</p>
+<p>Rendering features I plan to implement:</p>
+<ul>
+<li><strong>PBR</strong> Physically Basically Rendering following GLTF's standards</li>
+<li><strong>Frame Graphs (or Post Processing Stack)</strong> to control the way framed are rendered, allowing to possibility to choose Forward, Deferred or Forward+ rendering</li>
+<li><strong>Reflection Probes</strong></li>
+</ul>
+<p>And If I have time to add more:</p>
+<ul>
+<li><strong>Light Probes</strong> usinh <em>Spherical Harmonics</em></li>
+<li><strong>Path Tracer</strong> to compare results and get some cool screenshots !</li>
+<li><strong>Plenty of other techniques</strong> SSAO, SSR, HDR...</li>
+</ul>
+<h2 id="resources">Resources</h2>
+<ul>
+<li><a href="http://guillaume.belz.free.fr/doku.php?id=ecs">Entity Component System in C++, Qt, OpenGL and CUDA (FR) 🔗</a></li>
+<li><a href="https://vulkan-tutorial.com/">Vulkan Development 🔗</a></li>
+<li><a href="https://www.mono-project.com/docs/advanced/embedding/">Embedding Mono 🔗</a> <em>(with an <a href="https://gist.github.com/zwcloud/b342d264176ee2143aca970a9933e5cc">example 🔗</a>)</em></li>
+<li><a href="https://github.com/Eikins/3D-Sea-Project">3D-Sea Engine 🔗</a> for base architecture and OpenGL rendering</li>
+<li><a href="https://gameprogrammingpatterns.com/">Game Programming Patterns 📖</a></li>
+<li><a href="https://www.mixamo.com/">Mixamo 🕺 🔗</a></li>
+<li>My GameDev lectures</li>
+</ul>
+
+    </body>
+    </html>
