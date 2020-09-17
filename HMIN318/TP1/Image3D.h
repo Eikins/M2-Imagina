@@ -52,7 +52,7 @@ namespace MedicalImage {
 			return _data[z * _dimensions[0] * _dimensions[1] + y * _dimensions[0] + x];
 		}
 
-		Image3D ComputeVisualisation(const Image3D &source, const Axis axis, const VisualisationMode mode);
+		Image3D ComputeVisualisation(const Axis axis, const VisualisationMode mode);
 
 		void Save(const char* name, bool littleEndian);
 	};

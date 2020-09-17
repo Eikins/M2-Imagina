@@ -44,15 +44,15 @@ int main(int argc, char *argv[])
 	std::string savedFilenameZMinIP(argv[1]);
 	savedFilenameZMinIP.insert(0, "out\\Z-MinIP-");
 
-	image.ComputeVisualisation(image, MedicalImage::X, MedicalImage::MIP).Save(savedFilenameXMIP.c_str(), true);
-	image.ComputeVisualisation(image, MedicalImage::Y, MedicalImage::MIP).Save(savedFilenameYMIP.c_str(), true);
-	image.ComputeVisualisation(image, MedicalImage::Z, MedicalImage::MIP).Save(savedFilenameZMIP.c_str(), true);
+	image.ComputeVisualisation(MedicalImage::X, MedicalImage::MIP).Save(savedFilenameXMIP.c_str(), true);
+	image.ComputeVisualisation(MedicalImage::Y, MedicalImage::MIP).Save(savedFilenameYMIP.c_str(), true);
+	image.ComputeVisualisation(MedicalImage::Z, MedicalImage::MIP).Save(savedFilenameZMIP.c_str(), true);
 
-	image.ComputeVisualisation(image, MedicalImage::X, MedicalImage::AIP).Save(savedFilenameXAIP.c_str(), true);
-	image.ComputeVisualisation(image, MedicalImage::Y, MedicalImage::AIP).Save(savedFilenameYAIP.c_str(), true);
-	image.ComputeVisualisation(image, MedicalImage::Z, MedicalImage::AIP).Save(savedFilenameZAIP.c_str(), true);
+	image.ComputeVisualisation(MedicalImage::X, MedicalImage::AIP).Save(savedFilenameXAIP.c_str(), true);
+	image.ComputeVisualisation(MedicalImage::Y, MedicalImage::AIP).Save(savedFilenameYAIP.c_str(), true);
+	image.ComputeVisualisation(MedicalImage::Z, MedicalImage::AIP).Save(savedFilenameZAIP.c_str(), true);
 
-	image.ComputeVisualisation(image, MedicalImage::Z, MedicalImage::MinIP).Save(savedFilenameXMinIP.c_str(), true);
-	image.ComputeVisualisation(image, MedicalImage::X, MedicalImage::MinIP).Save(savedFilenameYMinIP.c_str(), true);
-	image.ComputeVisualisation(image, MedicalImage::Y, MedicalImage::MinIP).Save(savedFilenameZMinIP.c_str(), true);
+	image.ComputeVisualisation(MedicalImage::Z, MedicalImage::MinIP).Save(savedFilenameXMinIP.c_str(), true);
+	image.ComputeVisualisation(MedicalImage::X, MedicalImage::MinIP).Save(savedFilenameYMinIP.c_str(), true);
+	image.ComputeVisualisation(MedicalImage::Y, MedicalImage::MinIP).Save(savedFilenameZMinIP.c_str(), true);
 }

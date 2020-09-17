@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>HMIN318 Imagerie médicale et 3D - Lecture, stockage d'images 3D et visualisation volumique</title>
+        <style>
+</style>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css" integrity="sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j" crossorigin="anonymous">
+<link href="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.css" rel="stylesheet" type="text/css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item { list-style-type: none; } .task-list-item-checkbox { margin-left: -20px; vertical-align: middle; }
+</style>
+        
+        <script src="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.js"></script>
+        
+    </head>
+    <body class="vscode-light">
+        <h1 id="hmin318-imagerie-médicale-et-3d---lecture-stockage-dimages-3d-et-visualisation-volumique">HMIN318 Imagerie médicale et 3D - Lecture, stockage d'images 3D et visualisation volumique</h1>
+<p>Auteur: Noé Masse</p>
+<h2 id="lecture-et-stockage-dimages-3d">Lecture et stockage d'images 3D</h2>
+<p>Pour lire et sauvegarder une image 3D, il faut utiliser la classe <code>Image3D</code> de la lib <code>MedicalImage</code>.</p>
+<p>Le nom de l'image doit correspondre au format suivant</p>
+<pre><code><code><div>{NOM}.{Width}x{Height}x{Depth}.{VoxelX}x{VoxelY}x{VoxelZ}.img
+</div></code></code></pre>
+<p>Où <code>Width</code>, <code>Height</code> et <code>Depth</code> sont les dimensions de l'image, et <code>VoxelX</code>, <code>VoxelY</code> et <code>VoxelZ</code> les dimensions d'un voxel.</p>
+<p>Exemple</p>
+<pre><code><code><div>t1-head.256x256x129.1.5x1.5x1.5.img
+</div></code></code></pre>
+<p>Une fois ceci fait, il suffit d'appeler le constructeur avec le nom de notre image.</p>
+<pre><code class="language-C++"><div><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">"Image3D.h"</span></span>
+
+...
+
+MedicalImage::<span class="hljs-function">Image3D <span class="hljs-title">image</span><span class="hljs-params">(<span class="hljs-string">"resources\\t1-head.256x256x129.1.5x1.5x1.5.img"</span>)</span></span>;
+<span class="hljs-comment">// Read or write voxel at coords (x, y, z)</span>
+image(<span class="hljs-number">131</span>, <span class="hljs-number">157</span>, <span class="hljs-number">48</span>) = <span class="hljs-number">0</span>;
+<span class="hljs-comment">// Save the image</span>
+image.Save(<span class="hljs-string">"results\\modified-t1-head.img"</span>);
+</div></code></pre>
+<h2 id="rendu-volumique">Rendu Volumique</h2>
+<p>Afin de pourvoir examiner les données, on peut générer le rendu volumique <code>MIP</code>, <code>AIP</code> ou <code>MinIP</code> suivant les axes <code>X</code>, <code>Y</code> et <code>Z</code>.</p>
+<pre><code class="language-C++"><div>MedicalImage::Image3D volumeRenderImage = image.ComputeVisualisation(
+    <span class="hljs-comment">/* Axis */</span> MedicalImage::X,
+    <span class="hljs-comment">/* Mode */</span> MedicalImage::MIP);
+</div></code></pre>
+<h2 id="résultats">Résultats</h2>
+<p>Résultats pour l'image <em>t1-head</em>:</p>
+<h3 id="mip-aip-et-minip-suivant-vecx">MIP, AIP et MinIP suivant <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover accent="true"><mi>x</mi><mo>⃗</mo></mover></mrow><annotation encoding="application/x-tex">\vec{x}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.714em;vertical-align:0em;"></span><span class="mord accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.714em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathdefault">x</span></span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.20772em;"><span class="overlay" style="height:0.714em;width:0.471em;"><svg width='0.471em' height='0.714em' style='width:0.471em' viewBox='0 0 471 714' preserveAspectRatio='xMinYMin'><path d='M377 20c0-5.333 1.833-10 5.5-14S391 0 397 0c4.667 0 8.667 1.667 12 5
+3.333 2.667 6.667 9 10 19 6.667 24.667 20.333 43.667 41 57 7.333 4.667 11
+10.667 11 18 0 6-1 10-3 12s-6.667 5-14 9c-28.667 14.667-53.667 35.667-75 63
+-1.333 1.333-3.167 3.5-5.5 6.5s-4 4.833-5 5.5c-1 .667-2.5 1.333-4.5 2s-4.333 1
+-7 1c-4.667 0-9.167-1.833-13.5-5.5S337 184 337 178c0-12.667 15.667-32.333 47-59
+H213l-171-1c-8.667-6-13-12.333-13-19 0-4.667 4.333-11.333 13-20h359
+c-16-25.333-24-45-24-59z'/></svg></span></span></span></span></span></span></span></span></span></span></h3>
+<p><img src="file:///d:\Documents\Documents\Cours\M2-Imagina\HMIN318\TP1 Report\img\result-X.png" alt=""></p>
+<h3 id="mip-aip-et-minip-suivant-vecy">MIP, AIP et MinIP suivant <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover accent="true"><mi>y</mi><mo>⃗</mo></mover></mrow><annotation encoding="application/x-tex">\vec{y}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9084399999999999em;vertical-align:-0.19444em;"></span><span class="mord accent"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.714em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathdefault" style="margin-right:0.03588em;">y</span></span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.17994em;"><span class="overlay" style="height:0.714em;width:0.471em;"><svg width='0.471em' height='0.714em' style='width:0.471em' viewBox='0 0 471 714' preserveAspectRatio='xMinYMin'><path d='M377 20c0-5.333 1.833-10 5.5-14S391 0 397 0c4.667 0 8.667 1.667 12 5
+3.333 2.667 6.667 9 10 19 6.667 24.667 20.333 43.667 41 57 7.333 4.667 11
+10.667 11 18 0 6-1 10-3 12s-6.667 5-14 9c-28.667 14.667-53.667 35.667-75 63
+-1.333 1.333-3.167 3.5-5.5 6.5s-4 4.833-5 5.5c-1 .667-2.5 1.333-4.5 2s-4.333 1
+-7 1c-4.667 0-9.167-1.833-13.5-5.5S337 184 337 178c0-12.667 15.667-32.333 47-59
+H213l-171-1c-8.667-6-13-12.333-13-19 0-4.667 4.333-11.333 13-20h359
+c-16-25.333-24-45-24-59z'/></svg></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.19444em;"><span></span></span></span></span></span></span></span></span></h3>
+<p><img src="file:///d:\Documents\Documents\Cours\M2-Imagina\HMIN318\TP1 Report\img\result-Y.png" alt=""></p>
+<h3 id="mip-aip-et-minip-suivant-vecz">MIP, AIP et MinIP suivant <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mover accent="true"><mi>z</mi><mo>⃗</mo></mover></mrow><annotation encoding="application/x-tex">\vec{z}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.714em;vertical-align:0em;"></span><span class="mord accent"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.714em;"><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord mathdefault" style="margin-right:0.04398em;">z</span></span></span><span style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="accent-body" style="left:-0.17994em;"><span class="overlay" style="height:0.714em;width:0.471em;"><svg width='0.471em' height='0.714em' style='width:0.471em' viewBox='0 0 471 714' preserveAspectRatio='xMinYMin'><path d='M377 20c0-5.333 1.833-10 5.5-14S391 0 397 0c4.667 0 8.667 1.667 12 5
+3.333 2.667 6.667 9 10 19 6.667 24.667 20.333 43.667 41 57 7.333 4.667 11
+10.667 11 18 0 6-1 10-3 12s-6.667 5-14 9c-28.667 14.667-53.667 35.667-75 63
+-1.333 1.333-3.167 3.5-5.5 6.5s-4 4.833-5 5.5c-1 .667-2.5 1.333-4.5 2s-4.333 1
+-7 1c-4.667 0-9.167-1.833-13.5-5.5S337 184 337 178c0-12.667 15.667-32.333 47-59
+H213l-171-1c-8.667-6-13-12.333-13-19 0-4.667 4.333-11.333 13-20h359
+c-16-25.333-24-45-24-59z'/></svg></span></span></span></span></span></span></span></span></span></span></h3>
+<p><img src="file:///d:\Documents\Documents\Cours\M2-Imagina\HMIN318\TP1 Report\img\result-Z.png" alt=""></p>
+<h2 id="bonus--résultats-du-secret-bien-gardé">Bonus : Résultats du secret bien gardé</h2>
+<p>Grâce au rendu volumique, l'image secrète est révélée et nous nous apercevons que c'est un scarabée 🐞</p>
+<p><img src="file:///d:\Documents\Documents\Cours\M2-Imagina\HMIN318\TP1 Report\img\secret_revealed.png" alt=""></p>
+
+    </body>
+    </html>

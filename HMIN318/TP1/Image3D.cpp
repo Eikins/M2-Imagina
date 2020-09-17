@@ -92,7 +92,7 @@ MedicalImage::Image3D::Image3D(const int dimensions[3], const float voxelSize[3]
 	_data.resize(dimensions[0] * dimensions[1] * dimensions[2]);
 }
 
-MedicalImage::Image3D MedicalImage::Image3D::ComputeVisualisation(const Image3D & source, const Axis axis, const VisualisationMode mode)
+MedicalImage::Image3D MedicalImage::Image3D::ComputeVisualisation(const Axis axis, const VisualisationMode mode)
 {
 	int dim1 = (axis + 1) % 3;
 	int dim2 = (axis + 2) % 3;
