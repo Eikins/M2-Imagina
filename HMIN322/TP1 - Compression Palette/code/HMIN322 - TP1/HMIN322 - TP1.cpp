@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cstdlib>
 #include <string>
+#include <cmath>
 
 #include "ImageBase.h"
 
@@ -36,71 +37,7 @@ void computeInitial2Means(ImageBase &image, U8ColorRGB &m0, U8ColorRGB &m1)
 	}
 }
 
-
-//void compute2Means(ImageBase &src, ImageBase &dst, U8ColorRGB &m0, U8ColorRGB &m1)
-//{
-//
-//	float newM0[]{ 0, 0, 0 };
-//	float newM1[]{ 0, 0, 0 };
-//
-//	unsigned int m0Count = 0;
-//	unsigned int m1Count = 0;
-//
-//	for (int y = 0; y < src.getHeight(); ++y)
-//	{
-//		for (int x = 0; x < src.getWidth(); ++x)
-//		{
-//			U8ColorRGB pixel = src(x, y);
-//			U8ColorRGB mask = dst(x, y);
-//
-//			if (mask == m0)
-//			{
-//				newM0[0] += pixel.r;
-//				newM0[1] += pixel.g;
-//				newM0[1] += pixel.b;
-//				m0Count++;
-//			}
-//			else
-//			{
-//				newM1[0] += pixel.r;
-//				newM1[1] += pixel.g;
-//				newM1[1] += pixel.b;
-//				m1Count++;
-//			}
-//		}
-//	}
-//
-//	m0.r = (unsigned char)(newM0[0] / m0Count);
-//	m0.g = (unsigned char)(newM0[1] / m0Count);
-//	m0.b = (unsigned char)(newM0[2] / m0Count);
-//
-//	m1.r = (unsigned char)(newM1[0] / m1Count);
-//	m1.g = (unsigned char)(newM1[1] / m1Count);
-//	m1.b = (unsigned char)(newM1[2] / m1Count);
-//}
-//
-//void assign2Means(ImageBase &src, ImageBase &dst, U8ColorRGB &m0, U8ColorRGB &m1, int mag0, int mag1)
-//{
-//	for (int y = 0; y < src.getHeight(); ++y)
-//	{
-//		for (int x = 0; x < src.getWidth(); ++x)
-//		{
-//			U8ColorRGB color = src(x, y);
-//			int magnitude = color.mag();
-//
-//			if (abs(magnitude - mag0) < abs(magnitude - mag1))
-//			{
-//				dst.set(x, y, m0);
-//			}
-//			else
-//			{
-//				dst.set(x, y, m1);
-//			}
-//		}
-//	}
-//}
-
-void recomputePalette(ImageBase &src, std::vector<unsigned char> indexedImage, std::vector<U8ColorRGB> palette)
+void recomputePalette(ImageBase &src, std::vector<unsigned char> &indexedImage, std::vector<U8ColorRGB> &palette)
 {
 	std::vector<float> means(palette.size() * 4);
 
@@ -126,7 +63,7 @@ void recomputePalette(ImageBase &src, std::vector<unsigned char> indexedImage, s
 	}
 }
 
-void applyPalette(ImageBase &src, std::vector<unsigned char> indexedImage, std::vector<U8ColorRGB> palette)
+void applyPalette(ImageBase &src, std::vector<unsigned char> &indexedImage, std::vector<U8ColorRGB> &palette)
 {
 	for (int y = 0; y < src.getHeight(); ++y)
 	{
@@ -149,41 +86,108 @@ void applyPalette(ImageBase &src, std::vector<unsigned char> indexedImage, std::
 	}
 }
 
+double psnr(ImageBase &src, ImageBase &cmp)
+{
+	double eqm[3] = { 0.0, 0.0, 0.0 };
+	double mn_inv = 1.0 / (src.getHeight() * src.getWidth());
+
+	for (int y = 0; y < src.getHeight(); ++y)
+	{
+		for (int x = 0; x < src.getWidth(); ++x)
+		{
+			U8ColorRGB srcColor = src(x, y);
+			U8ColorRGB cmpColor = cmp(x, y);
+			eqm[0] += std::abs(srcColor.r - cmpColor.r) * std::abs(srcColor.r - cmpColor.r);
+			eqm[1] += std::abs(srcColor.g - cmpColor.g) * std::abs(srcColor.g - cmpColor.g);
+			eqm[2] += std::abs(srcColor.b - cmpColor.b) * std::abs(srcColor.b - cmpColor.b);
+		}
+	}
+	eqm[0] *= mn_inv;
+	eqm[1] *= mn_inv;
+	eqm[2] *= mn_inv;
+
+	return 10.0 * std::log10(255 * 255 / ((eqm[0] + eqm[1] + eqm[2]) / 3.0));
+}
+
 int main(int argc, char *argv[])
 {
-	if (argc != 3)
+	if (argc != 5)
 	{
-		cout << "Usage: input output" << endl;
+		cout << "Usage: input output_ppm output_pgm output_palette" << endl;
 		return 1;
 	}
-
-	string inputFilename(argv[1]);
-	string outputFilename(argv[2]);
 
 	ImageBase inputImage;
 	inputImage.load(argv[1]);
 
-	std::vector<U8ColorRGB> colorPalette(2);
-	computeInitial2Means(inputImage, colorPalette[0], colorPalette[1]);
+	//std::vector<U8ColorRGB> colorPalette(2);
+	//computeInitial2Means(inputImage, colorPalette[0], colorPalette[1]);
+
+	std::vector<U8ColorRGB> colorPalette(256);
+	for (int i = 0; i < 256; i++)
+	{
+		colorPalette[i] = { std::rand() % 256, std::rand() % 256, std::rand() % 255 };
+	}
 
 	std::vector<unsigned char> compressedImageData(inputImage.getWidth() * inputImage.getHeight());
 
-	for (int i = 0; i < 5; i++)
+	std::vector<U8ColorRGB> lastPalette;
+	int iter = 0;
+	int max_iter = 1;
+
+	do
 	{
+		lastPalette = colorPalette;
 		applyPalette(inputImage, compressedImageData, colorPalette);
 		recomputePalette(inputImage, compressedImageData, colorPalette);
-	}
+		iter++;
+		std::cout << iter << std::endl;
+	} while (lastPalette != colorPalette && iter < max_iter);
+
+	std::cout << iter << std::endl;
 	
 	ImageBase outputImage(inputImage.getWidth(), inputImage.getHeight(), inputImage.getColor());
+	ImageBase outputPGM(inputImage.getWidth(), inputImage.getHeight(), inputImage.getColor());
+	int paletteWidth = std::ceil(std::sqrt(colorPalette.size()));
+	int paletteHeight = std::floor(std::sqrt(colorPalette.size()));
+	ImageBase outputPalette(paletteWidth * 16, paletteHeight * 16, inputImage.getColor());
+
+
 	for (int y = 0; y < outputImage.getHeight(); ++y)
 	{
 		for (int x = 0; x < outputImage.getWidth(); ++x)
 		{
 			unsigned char colorIndex = compressedImageData[y * outputImage.getWidth() + x];
-			outputImage(x, y) = colorPalette[colorIndex];
+			outputImage.set(x, y, colorPalette[colorIndex]);
 		}
 	}
 	outputImage.save(argv[2]);
+
+	for (int y = 0; y < outputImage.getHeight(); ++y)
+	{
+		for (int x = 0; x < outputImage.getWidth(); ++x)
+		{
+			unsigned char colorIndex = compressedImageData[y * outputImage.getWidth() + x];
+			outputPGM.set(x, y, { colorIndex, colorIndex, colorIndex });
+		}
+	}
+	outputPGM.save(argv[3]);
+
+
+	for (int i = 0; i < colorPalette.size(); i++)
+	{
+		for (int y = 0; y < 16; ++y)
+		{
+			for (int x = 0; x < 16; ++x)
+			{
+				outputPalette.set((i % paletteWidth) * 16 + x, (i / paletteWidth) * 16 + y, colorPalette[i]);
+			}
+		}
+	}
+
+	outputPalette.save(argv[4]);
+
+	std::cout << psnr(inputImage, outputImage) << std::endl;
 
 	return 0;
 }
