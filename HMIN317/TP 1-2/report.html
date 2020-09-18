@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>HMIN 317 - Moteurs de Jeux : Prise en main de Qt Creator, Git et OpenGL ES 3.0</title>
+        <style>
+</style>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css" integrity="sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j" crossorigin="anonymous">
+<link href="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.css" rel="stylesheet" type="text/css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item { list-style-type: none; } .task-list-item-checkbox { margin-left: -20px; vertical-align: middle; }
+</style>
+        
+        <script src="https://cdn.jsdelivr.net/npm/katex-copytex@latest/dist/katex-copytex.min.js"></script>
+        
+    </head>
+    <body class="vscode-light">
+        <h1 id="hmin-317---moteurs-de-jeux--prise-en-main-de-qt-creator-git-et-opengl-es-30">HMIN 317 - Moteurs de Jeux : Prise en main de Qt Creator, Git et OpenGL ES 3.0</h1>
+<h2 id="transformations">Transformations</h2>
+<p>Un <code>GameObject</code> doit pourvoir subir différentes opérations mathématiques pour pouvoir le positionner et orienter dans l'espace.</p>
+<p>Pour se faire, on utilise les <strong>matrices de transformations</strong>.</p>
+<p>Les trois transformations nécessaires pour représenter un objet sont :</p>
+<ul>
+<li>Les translations <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>T</mi></mrow><annotation encoding="application/x-tex">T</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathdefault" style="margin-right:0.13889em;">T</span></span></span></span></li>
+<li>Les rotations <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>R</mi></mrow><annotation encoding="application/x-tex">R</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathdefault" style="margin-right:0.00773em;">R</span></span></span></span></li>
+<li>Les homothéties <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>S</mi></mrow><annotation encoding="application/x-tex">S</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathdefault" style="margin-right:0.05764em;">S</span></span></span></span></li>
+</ul>
+<p>La multiplication de matrices est l'équvalent de la composition des transformations, nous pouvons donc définir une matrice représentant la transformation de notre objet (Model Matrix <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>M</mi></mrow><annotation encoding="application/x-tex">M</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathdefault" style="margin-right:0.10903em;">M</span></span></span></span>).</p>
+<p><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>M</mi><mo>=</mo><mi>T</mi><mo>×</mo><mi>R</mi><mo>×</mo><mi>S</mi></mrow><annotation encoding="application/x-tex">M = T \times R \times S
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathdefault" style="margin-right:0.10903em;">M</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:0.76666em;vertical-align:-0.08333em;"></span><span class="mord mathdefault" style="margin-right:0.13889em;">T</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.76666em;vertical-align:-0.08333em;"></span><span class="mord mathdefault" style="margin-right:0.00773em;">R</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathdefault" style="margin-right:0.05764em;">S</span></span></span></span></span></p>
+<p>Pour simplifier les usages, nous ne travaillons pas directement avec des matrices, mais avec des objets plus simples représentant ces transformations qui seront convertis en matrices.</p>
+<p>Sous Qt, nous avons les éléments suivants :</p>
+<ul>
+<li>Les matrices sont représentées par des <code>QMatrix4x4</code></li>
+<li>Les translations et homothéties sont représentée par des <code>QVector3D</code></li>
+<li>Les rotations sont représentées par des <code>QQuaternion</code></li>
+</ul>
+<p>On peut donc par exemple, appliquer une transformation à notre objet</p>
+<pre><code class="language-C++"><div>QMatrix4x4 transform;
+QVector3 translation = QVector3(<span class="hljs-number">0.0</span>, <span class="hljs-number">0.0</span>, <span class="hljs-number">-5.0</span>);
+<span class="hljs-comment">// Rotation of 45° around Y</span>
+QQuaternion rotation = QQuaternion::fromAxisAndAngle(QVector3(<span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>), <span class="hljs-number">45.0</span>);
+QVector3 scale = QVector3(<span class="hljs-number">2.0</span>, <span class="hljs-number">1.0</span>, <span class="hljs-number">2.0</span>);
+
+transform.translate(translation);
+transform.rotate(rotation);
+transform.scale(scale);
+</div></code></pre>
+<p><em>Pour la 2D, il existe l'équivalent <a href="https://doc.qt.io/qt-5/qtransform.html#details"><code>QTransform</code> 🔗</a></em></p>
+<h2 id="dessin-en-3d">Dessin en 3D</h2>
+<h2 id="génération-de-terrain-avec-une-heightmap">Génération de terrain avec une Heightmap</h2>
+<h3 id="génération-dun-plan-subdivisé">Génération d'un plan subdivisé</h3>
+<p>La première étape consiste à générer un plan subdivisé sur lequel nous allons ensuite modifier la hauteur des sommets.</p>
+<p>Pour se faire, nous utilisons un <a href="https://en.wikipedia.org/wiki/Triangle_strip">Triangle Strip 🔗</a>.</p>
+<p><em>Une autre méthode est d'utiliser des éléments, mais moins optimal.   <a href="https://github.com/Eikins/3D-Sea-Project/blob/master/sea3d/core/mesh.py#L118"><code>Mesh.Plane</code> 🔗</a></em></p>
+<pre><code class="language-C++"><div><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">VertexData</span>
+{</span>
+    QVector3D position;
+    QVector2D texCoord;
+};
+
+
+<span class="hljs-keyword">void</span> Terrain::generatePlaneGeometry(<span class="hljs-keyword">int</span> width, <span class="hljs-keyword">int</span> length, <span class="hljs-keyword">int</span> widthSegments, <span class="hljs-keyword">int</span> lengthSegments)
+{
+    <span class="hljs-keyword">int</span> xCount = widthSegments + <span class="hljs-number">1</span>;
+    <span class="hljs-keyword">int</span> zCount = widthSegments + <span class="hljs-number">1</span>;
+
+    <span class="hljs-keyword">int</span> vertexCount = xCount * zCount;
+    <span class="hljs-keyword">int</span> indexCount = vertexCount + length;
+
+    <span class="hljs-built_in">std</span>::<span class="hljs-built_in">vector</span>&lt;VertexData&gt; vertices(vertexCount);
+    <span class="hljs-built_in">std</span>::<span class="hljs-built_in">vector</span>&lt;GLushort&gt; indices(indexCount);
+
+    <span class="hljs-comment">// Create vertices by lines</span>
+    <span class="hljs-comment">// 0 -- 1 -- ... -- W</span>
+    <span class="hljs-comment">// |    |     |     |</span>
+    <span class="hljs-comment">// W+1  . --  . --  2W</span>
+    <span class="hljs-comment">// |    |     |     |</span>
+    <span class="hljs-comment">// . -- . --  . --  .</span>
+    <span class="hljs-comment">// |    |     |     |</span>
+    <span class="hljs-comment">// . -- . --  . --  LW</span>
+
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> x = <span class="hljs-number">0</span>; x &lt; xCount; x++)
+    {
+        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> z = <span class="hljs-number">0</span>; z &lt; zCount; z++)
+        {
+            <span class="hljs-keyword">float</span> u = ((<span class="hljs-keyword">float</span>) x) / xCount;
+            <span class="hljs-keyword">float</span> v = ((<span class="hljs-keyword">float</span>) z) / zCount;
+            <span class="hljs-function">QVector3 <span class="hljs-title">position</span><span class="hljs-params">(u * width, v * length)</span></span>;
+            <span class="hljs-function">QVector2 <span class="hljs-title">texCoord</span><span class="hljs-params">(u, v)</span></span>;
+            vertices.push_back({position, texCoord});
+        }
+    }
+
+    <span class="hljs-comment">// <span class="hljs-doctag">TODO:</span> Indices</span>
+    <span class="hljs-comment">// 0 w+1 1 w+2 3 .... w-1 2w-1 2w-1</span>
+    <span class="hljs-comment">// ...</span>
+    <span class="hljs-comment">// pair =&gt; left to right</span>
+    <span class="hljs-comment">// impair =&gt; right to left</span>
+
+    <span class="hljs-comment">// Transfer vertex data to VBO 0</span>
+    glBindBuffer(GL_ARRAY_BUFFER, vboIds[<span class="hljs-number">0</span>]);
+    glBufferData(GL_ARRAY_BUFFER, vertexCount * <span class="hljs-keyword">sizeof</span>(VertexData), &amp;vertices[<span class="hljs-number">0</span>], GL_STATIC_DRAW);
+
+    <span class="hljs-comment">// Transfer index data to VBO 1</span>
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboIds[<span class="hljs-number">1</span>]);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexCount * <span class="hljs-keyword">sizeof</span>(GLushort), &amp;indices[<span class="hljs-number">0</span>], GL_STATIC_DRAW);
+}
+</div></code></pre>
+
+    </body>
+    </html>
