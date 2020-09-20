@@ -16,7 +16,6 @@
 #pragma once
 #include <stdio.h>
 #include <stdlib.h>
-#include "U8ColorRGB.h"
 
 class ImageBase
 {
@@ -59,8 +58,6 @@ public:
 	bool getColor() { return color; };
 	unsigned char *getData() { return data; };
 
-	void set(int x, int y, const U8ColorRGB &color);
-
 
 	void load(char *filename);
 	bool save(char *filename);
@@ -68,6 +65,5 @@ public:
 	ImageBase *getPlan(PLAN plan);
 
 	unsigned char *operator[](int l);
-	U8ColorRGB operator()(int x, int y);
 };
 

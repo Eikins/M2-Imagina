@@ -65,16 +65,20 @@ void recomputePalette(ImageBase &src, std::vector<unsigned char> &indexedImage, 
 
 void applyPalette(ImageBase &src, std::vector<unsigned char> &indexedImage, std::vector<U8ColorRGB> &palette)
 {
-	for (int y = 0; y < src.getHeight(); ++y)
+	int paletteSize = palette.size();
+	int height = src.getHeight();
+	int width = src.getWidth();
+	for (int y = 0; y < height; ++y)
 	{
-		for (int x = 0; x < src.getWidth(); ++x)
+		for (int x = 0; x < width; ++x)
 		{
 			U8ColorRGB color = src(x, y);
 			unsigned char nearestColorIndex;
 			int nearestColorSqDist = 195076; // 3 * 255^2 + 1
-			for (int i = 0; i < palette.size(); i++)
+			for (int i = 0; i < paletteSize; i++)
 			{
-				int distSq = color.distSq(palette[i]);
+				U8ColorRGB &pColor = palette[i];
+				int distSq = (color.r - pColor.r) * (color.r - pColor.r) + (color.g - pColor.g) * (color.g - pColor.g) + (color.b - pColor.b) * (color.b - pColor.b);
 				if (distSq < nearestColorSqDist)
 				{
 					nearestColorIndex = i;
@@ -172,7 +176,6 @@ int main(int argc, char *argv[])
 		}
 	}
 	outputPGM.save(argv[3]);
-
 
 	for (int i = 0; i < colorPalette.size(); i++)
 	{
