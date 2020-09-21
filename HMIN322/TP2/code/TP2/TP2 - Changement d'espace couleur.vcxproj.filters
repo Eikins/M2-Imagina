@@ -15,18 +15,18 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\TP2 - Changement d%27espace couleur\code\TP2 - Changement d%27espace couleur\TP2 - Changement d%27espace couleur.cpp">
+    <ClCompile Include="..\..\..\TP2\code\TP2\TP2 - Changement d%27espace couleur.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\TP2 - Changement d%27espace couleur\code\TP2 - Changement d%27espace couleur\ImageBase.cpp">
+    <ClCompile Include="..\..\..\TP2\code\TP2\ImageBase.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\..\TP2 - Changement d%27espace couleur\code\TP2 - Changement d%27espace couleur\image_ppm.h">
+    <ClInclude Include="..\..\..\TP2\code\TP2\image_ppm.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\TP2 - Changement d%27espace couleur\code\TP2 - Changement d%27espace couleur\ImageBase.h">
+    <ClInclude Include="..\..\..\TP2\code\TP2\ImageBase.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

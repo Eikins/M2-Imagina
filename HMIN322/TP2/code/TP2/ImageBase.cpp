@@ -205,19 +205,3 @@ unsigned char *ImageBase::operator[](int l)
 	return data + l * width;
 }
 
-U8ColorRGB ImageBase::operator()(int x, int y)
-{
-	U8ColorRGB pixel;
-	pixel.r = (*this)[y * 3][x * 3 + 0];
-	pixel.g = (*this)[y * 3][x * 3 + 1];
-	pixel.b = (*this)[y * 3][x * 3 + 2];
-	return pixel;
-}
-
-void ImageBase::set(int x, int y, const U8ColorRGB &color)
-{
-	(*this)[y * 3][x * 3 + 0] = color.r;
-	(*this)[y * 3][x * 3 + 1] = color.g;
-	(*this)[y * 3][x * 3 + 2] = color.b;
-}
-
