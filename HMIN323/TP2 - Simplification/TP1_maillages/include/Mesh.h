@@ -6,13 +6,15 @@
 // Include GLM
 #include <glm/glm.hpp>
 
+#include "Bounds.h"
+
 namespace Engine {
 
-
-	struct Bounds {
-	public:
-		glm::vec3 from;
-		glm::vec3 to;
+	enum class NormalWeightType
+	{
+		Uniforms,
+		PerArea,
+		PerAngle
 	};
 
 	class Mesh {
@@ -40,7 +42,11 @@ namespace Engine {
 
 		Bounds GetBounds(float offset = 0.0);
 
+		void ComputeNormals(const NormalWeightType weightType);
+
 		void Simplify(unsigned resolution);
+
+		void AdaptiveSimplify(uint32_t maxClusterVertexCount);
 
 		void DrawBounds();
 

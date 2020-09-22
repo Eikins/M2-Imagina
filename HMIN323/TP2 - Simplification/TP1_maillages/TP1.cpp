@@ -263,11 +263,11 @@ int main( void )
 
     //****************************************************************/
     //Calculer les normales par sommet
-    int weight = 2;
-    compute_smooth_vertex_normals(indexed_vertices, triangles, weight, indexed_normals);
+    //int weight = 2;
+    //compute_smooth_vertex_normals(indexed_vertices, triangles, weight, indexed_normals);
 
 	Engine::Mesh suzanneMesh(indexed_vertices, indexed_normals, indexed_uvs, indices);
-	suzanneMesh.Simplify(3);
+    suzanneMesh.ComputeNormals(Engine::NormalWeightType::PerAngle);
 
     // A faire : completer la fonction compute_vertex_valences pour calculer les valences
     //***********************************************//
@@ -325,6 +325,8 @@ int main( void )
     // For speed computation
     double lastTime = glfwGetTime();
     int nbFrames = 0;
+
+    bool hasSimplified = false;
 
     do{
 
@@ -428,7 +430,7 @@ int main( void )
         // Draw the triangles !
         glDrawElements(
                     GL_TRIANGLES,      // mode
-                    indices.size(),    // count
+                    suzanneMesh._indices.size(),    // count
                     GL_UNSIGNED_SHORT,   // type
                     (void*)0           // element array buffer offset
                     );
@@ -440,6 +442,52 @@ int main( void )
         // Swap buffers
         glfwSwapBuffers(window);
         glfwPollEvents();
+
+        // TODO: Factorize mesh buffer updates
+        if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS && hasSimplified == false)
+        {
+            suzanneMesh.Simplify(16);
+            hasSimplified = true;
+
+            // Simplification can only reduce size
+            // We then use glBufferSubData to avoid reallocating a new buffer
+
+            // Update Buffers
+            glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, suzanneMesh._vertices.size() * sizeof(glm::vec3), suzanneMesh._vertices.data());
+
+            glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, suzanneMesh._texCoords.size() * sizeof(glm::vec2), suzanneMesh._texCoords.data());
+
+            glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, suzanneMesh._normals.size() * sizeof(glm::vec3), suzanneMesh._normals.data());
+
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
+            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, suzanneMesh._indices.size() * sizeof(unsigned short), suzanneMesh._indices.data());
+        }
+
+        if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS && hasSimplified == false)
+        {
+            suzanneMesh.AdaptiveSimplify(2);
+            suzanneMesh.ComputeNormals(Engine::NormalWeightType::PerAngle);
+            hasSimplified = true;
+
+            // Simplification can only reduce size
+            // We then use glBufferSubData to avoid reallocating a new buffer
+
+            // Update Buffers
+            glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, suzanneMesh._vertices.size() * sizeof(glm::vec3), suzanneMesh._vertices.data());
+
+            glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, suzanneMesh._texCoords.size() * sizeof(glm::vec2), suzanneMesh._texCoords.data());
+
+            glBindBuffer(GL_ARRAY_BUFFER, normalbuffer);
+            glBufferSubData(GL_ARRAY_BUFFER, 0, suzanneMesh._normals.size() * sizeof(glm::vec3), suzanneMesh._normals.data());
+
+            glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, elementbuffer);
+            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, suzanneMesh._indices.size() * sizeof(unsigned short), suzanneMesh._indices.data());
+        }
 
     } // Check if the ESC key was pressed or the window was closed
     while( glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS &&

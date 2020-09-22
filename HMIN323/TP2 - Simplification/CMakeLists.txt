@@ -72,6 +72,8 @@ add_executable(TP1_maillages
 	TP1_maillages/fragment_shader.glsl
 
 	TP1_maillages/Mesh.cpp
+	TP1_maillages/Bounds.cpp
+	TP1_maillages/Octree.cpp
 )
 target_link_libraries(TP1_maillages
 	${ALL_LIBS}
