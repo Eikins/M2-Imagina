@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>HMIN320 Vision, réalités virtuelle et augmentée</title>
+        <style>
+</style>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item { list-style-type: none; } .task-list-item-checkbox { margin-left: -20px; vertical-align: middle; }
+</style>
+        
+        
+        
+    </head>
+    <body class="vscode-light">
+        <h1 id="hmin320-vision-réalités-virtuelle-et-augmentée">HMIN320 Vision, réalités virtuelle et augmentée</h1>
+<h2 id="threejs">Three.JS</h2>
+<p><em>Note : J'avais déjà utilisé Three.JS, notamment pour mon site (<a href="https://noe.masse.pro/">noe.masse.pro</a> 🔗).</em></p>
+<h2 id="résultats">Résultats</h2>
+<h3 id="resize">Resize</h3>
+<table>
+<thead>
+<tr>
+<th>Taille normale</th>
+<th>Large</th>
+<th>Fin</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src=".\report\img\resize_full.png" alt=""></td>
+<td><img src=".\report\img\resize_large.png" alt=""></td>
+<td><img src=".\report\img\resize_thin.png" alt=""></td>
+</tr>
+</tbody>
+</table>
+<h4 id="remarque">Remarque</h4>
+<p>Il est préféranle de ne pas utiliser la propriété <code>window</code>, cela ne marche que dans le cas où le canvas prend tout l'écran.</p>
+<p>On peut à la place contenir notre rendu dans un <strong>container</strong></p>
+<pre><code class="language-HTML"><div><span class="hljs-tag">&lt;<span class="hljs-name">div</span> <span class="hljs-attr">id</span>=<span class="hljs-string">"webgl-container"</span> <span class="hljs-attr">style</span>=<span class="hljs-string">"width: 100vw; height: 100vh;"</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">div</span>&gt;</span>
+</div></code></pre>
+<p>On ajoute un Observer sur le <strong>container</strong></p>
+<pre><code class="language-JavaScript"><div><span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">onContainerResize</span>(<span class="hljs-params"></span>) </span>{
+    <span class="hljs-keyword">let</span> parent = renderer.domElement.parentElement;
+    <span class="hljs-keyword">let</span> width = parent.clientWidth;
+    <span class="hljs-keyword">let</span> height = parent.clientHeight;
+
+    camera.aspect = width / height;
+    camera.updateProjectionMatrix();
+    renderer.setSize(width, height);
+}
+
+...
+
+renderer = <span class="hljs-keyword">new</span> THREE.WebGLRenderer({
+    <span class="hljs-attr">antialias</span>: <span class="hljs-literal">true</span>
+});
+renderer.physicallyCorrectLights = <span class="hljs-literal">true</span>;
+renderer.setSize(containerElement.clientWidth, containerElement.clientHeight);
+
+<span class="hljs-comment">// Attach a resize observer on the container</span>
+<span class="hljs-keyword">new</span> ResizeObserver(onContainerResize).observe(containerElement);
+containerElement.appendChild(renderer.domElement);
+</div></code></pre>
+<h3 id="rotation">Rotation</h3>
+<p><img src=".\report\img\rotation.gif" alt=""></p>
+<h3 id="modèle-de-phong">Modèle de Phong</h3>
+<p><img src=".\report\img\phong.png" alt=""></p>
+<h3 id="carousel">Carousel</h3>
+<p><img src=".\report\img\carousel.png" alt=""></p>
+<h3 id="résultat-final">Résultat final</h3>
+<p><img src=".\report\img\result.gif" alt=""></p>
+<h4 id="remarque-1">Remarque</h4>
+<p>On peut utiliser directement une cubemap en tant que skybox.</p>
+<pre><code class="language-JavaScript"><div>scene.background = <span class="hljs-keyword">new</span> THREE.CubeTextureLoader().load([
+    <span class="hljs-string">"textures/cube/posx.jpg"</span>,
+    <span class="hljs-string">"textures/cube/negx.jpg"</span>,
+    <span class="hljs-string">"textures/cube/posy.jpg"</span>,
+    <span class="hljs-string">"textures/cube/negy.jpg"</span>,
+    <span class="hljs-string">"textures/cube/posz.jpg"</span>,
+    <span class="hljs-string">"textures/cube/negz.jpg"</span>,
+]);
+</div></code></pre>
+
+    </body>
+    </html>
