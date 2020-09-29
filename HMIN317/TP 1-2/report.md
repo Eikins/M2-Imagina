@@ -2,8 +2,7 @@
 
 ## Transformations
 
-Un `GameObject` doit pourvoir subir différentes opérations mathématiques pour pouvoir le positionner et orienter dans l'espace.
-
+Un `Objet 3D` doit pourvoir subir différentes opérations mathématiques pour pouvoir le positionner et orienter dans l'espace.
 Pour se faire, on utilise les **matrices de transformations**.
 
 Les trois transformations nécessaires pour représenter un objet sont :
@@ -40,6 +39,7 @@ transform.scale(scale);
 
 ## Dessin en 3D
 
+Pour dessiner des objets sur l'écran, on utilise ici une surcouche d'**OpenGL**, ainsi, on créer des `VertexBufferObject`
 
 ## Génération de terrain avec une Heightmap
 

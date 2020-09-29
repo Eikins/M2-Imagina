@@ -1,20 +1,44 @@
-#version 150
+#version 330
 
-uniform mat4 mvp_matrix;
+uniform mat4 mat_ObjectToWorld;
+uniform mat4 mat_WorldToView;
+uniform mat4 mat_ViewToClip;
 
-in vec4 a_position;
-in vec2 a_texcoord;
+uniform sampler2D _HeightMap;
 
-out vec2 v_texcoord;
+in vec3 position;
+in vec2 texCoord0;
 
-//! [0]
+out vec3 v_osPos;
+out vec2 v_texCoord0;
+
+#define MAX_HEIGHT 2.0F
+
+vec4 ObjectToWorld(in vec4 osVec)
+{
+    return mat_ObjectToWorld * osVec;
+}
+
+vec4 WorldToView(in vec4 wsVec)
+{
+    return mat_WorldToView * wsVec;
+}
+
+vec4 ViewToClip(in vec4 vsVec)
+{
+    return mat_ViewToClip * vsVec;
+}
+
 void main()
 {
-    // Calculate vertex position in screen space
-    gl_Position = mvp_matrix * a_position;
+    v_texCoord0 = texCoord0;
 
-    // Pass texture coordinate to fragment shader
-    // Value will be automatically interpolated to fragments inside polygon faces
-    v_texcoord = a_texcoord;
+    vec4 pos = vec4(position, 1.0);
+    // Terrain height
+    pos.y += texture2D(_HeightMap, texCoord0).r * MAX_HEIGHT;
+    v_osPos = pos.xyz;
+
+    pos = ObjectToWorld(pos);
+    pos = WorldToView(pos);
+    gl_Position = ViewToClip(pos);
 }
-//! [0]

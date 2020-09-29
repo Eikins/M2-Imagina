@@ -56,10 +56,12 @@
 
 MainWidget::MainWidget(QWidget *parent) :
     QOpenGLWidget(parent),
-    geometries(0),
-    texture(0),
     angularSpeed(0)
 {
+    view.setToIdentity();
+    view.translate(0.0F, 3.0F, 0.0F);
+    view.lookAt(QVector3D(0.0F, 1.0F, 0.0F), QVector3D(0.0F, 0.0F, 0.0F), QVector3D(0.0F, 0.0F, 1.0F));
+    view = view.inverted();
 }
 
 MainWidget::~MainWidget()
@@ -67,8 +69,6 @@ MainWidget::~MainWidget()
     // Make sure the context is current when deleting the texture
     // and the buffers.
     makeCurrent();
-    delete texture;
-    delete geometries;
     doneCurrent();
 }
 
@@ -103,7 +103,7 @@ void MainWidget::mouseReleaseEvent(QMouseEvent *e)
 void MainWidget::timerEvent(QTimerEvent *)
 {
     // Decrease angular speed (friction)
-    angularSpeed *= 0.99;
+    angularSpeed *= 0.95;
 
     // Stop rotation when speed goes below threshold
     if (angularSpeed < 0.01) {
@@ -127,15 +127,14 @@ void MainWidget::initializeGL()
     initShaders();
     initTextures();
 
-//! [2]
     // Enable depth buffer
     glEnable(GL_DEPTH_TEST);
 
     // Enable back face culling
     glEnable(GL_CULL_FACE);
-//! [2]
 
-    geometries = new GeometryEngine;
+    //glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    geometries = std::make_unique<GeometryEngine>();
 
     // Use QBasicTimer because its faster than QTimer
     timer.start(12, this);
@@ -165,29 +164,38 @@ void MainWidget::initShaders()
 //! [4]
 void MainWidget::initTextures()
 {
-    // Load cube.png image
-    texture = new QOpenGLTexture(QImage(":/cube.png").mirrored());
+    std::array<QImage, 3> images {
+        QImage(":/grass.png"),
+        QImage(":/rock.png"),
+        QImage(":/snowrocks.png")
+    };
 
-    // Set nearest filtering mode for texture minification
-    texture->setMinificationFilter(QOpenGLTexture::Nearest);
+    for (int i = 0; i < 3; i++)
+    {
+        terrainTextures[i] = std::make_unique<QOpenGLTexture>(images[i]);
 
-    // Set bilinear filtering mode for texture magnification
-    texture->setMagnificationFilter(QOpenGLTexture::Linear);
+        // Set nearest filtering mode for texture minification
+        terrainTextures[i]->setMinificationFilter(QOpenGLTexture::Nearest);
 
-    // Wrap texture coordinates by repeating
-    // f.ex. texture coordinate (1.1, 1.2) is same as (0.1, 0.2)
-    texture->setWrapMode(QOpenGLTexture::Repeat);
+        // Set bilinear filtering mode for texture magnification
+        terrainTextures[i]->setMagnificationFilter(QOpenGLTexture::Linear);
+
+        // Wrap texture coordinates by repeating
+        // f.ex. texture coordinate (1.1, 1.2) is same as (0.1, 0.2)
+        terrainTextures[i]->setWrapMode(QOpenGLTexture::Repeat);
+
+    }
+
+    heightMap = std::make_unique<QOpenGLTexture>(QImage(":/Heightmap_Rocky.png"));
 }
-//! [4]
 
-//! [5]
 void MainWidget::resizeGL(int w, int h)
 {
     // Calculate aspect ratio
     qreal aspect = qreal(w) / qreal(h ? h : 1);
 
     // Set near plane to 3.0, far plane to 7.0, field of view 45 degrees
-    const qreal zNear = 3.0, zFar = 7.0, fov = 45.0;
+    const qreal zNear = 0.3, zFar = 100.0, fov = 60.0;
 
     // Reset projection
     projection.setToIdentity();
@@ -202,21 +210,29 @@ void MainWidget::paintGL()
     // Clear color and depth buffer
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    texture->bind();
+    heightMap->bind(0);
+    for (int i = 0; i < 3; i++)
+    {
+        terrainTextures[i]->bind(i + 1);
+    }
 
-//! [6]
     // Calculate model view transformation
     QMatrix4x4 matrix;
-    matrix.translate(0.0, 0.0, -5.0);
+    matrix.translate(-5.0, -2.0, -5.0);
     matrix.rotate(rotation);
 
     // Set modelview-projection matrix
-    program.setUniformValue("mvp_matrix", projection * matrix);
-//! [6]
+    program.setUniformValue("mat_ObjectToWorld", matrix);
+    program.setUniformValue("mat_WorldToView", view);
+    program.setUniformValue("mat_ViewToClip", projection);
 
     // Use texture unit 0 which contains cube.png
-    program.setUniformValue("texture", 0);
+    program.setUniformValue("_HeightMap", 0);
+
+    program.setUniformValue("_GrassTexMap", 1);
+    program.setUniformValue("_RockTexMap", 2);
+    program.setUniformValue("_SnowrockTexMap", 3);
 
     // Draw cube geometry
-    geometries->drawCubeGeometry(&program);
+    geometries->draw(&program);
 }

@@ -51,6 +51,8 @@
 #ifndef MAINWIDGET_H
 #define MAINWIDGET_H
 
+#include <array>
+
 #include "geometryengine.h"
 
 #include <QOpenGLWidget>
@@ -87,11 +89,14 @@ protected:
 private:
     QBasicTimer timer;
     QOpenGLShaderProgram program;
-    GeometryEngine *geometries;
 
-    QOpenGLTexture *texture;
+    std::unique_ptr<GeometryEngine> geometries;
+
+    std::array<std::unique_ptr<QOpenGLTexture>, 3> terrainTextures;
+    std::unique_ptr<QOpenGLTexture> heightMap;
 
     QMatrix4x4 projection;
+    QMatrix4x4 view;
 
     QVector2D mousePressPosition;
     QVector3D rotationAxis;
