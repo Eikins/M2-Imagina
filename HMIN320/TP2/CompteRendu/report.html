@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>HMIN320 Vision, réalités virtuelle et augmentée</title>
+        <style>
+</style>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item { list-style-type: none; } .task-list-item-checkbox { margin-left: -20px; vertical-align: middle; }
+</style>
+        
+        
+        
+    </head>
+    <body class="vscode-light">
+        <h1 id="hmin320-vision-réalités-virtuelle-et-augmentée">HMIN320 Vision, réalités virtuelle et augmentée</h1>
+<h2 id="environnement">Environnement</h2>
+<p>Afin de créer l'environnement pour notre personnage, j'ai décidé d'utiliser le package <strong>ProBuilder</strong> au lieu d'utiliser un terrain.
+Celui ci permet de prototyper des niveaux très facilement en fournissant plusieurs outils pour générer
+de la géométrie.
+Cela permet aux level designers de fabriquer les niveaux, derrière lesquels les environnement artist pourront travailler pour y ajouter les décors visuels.</p>
+<img src="img\probuilder.png" width="800">
+<p><em>J'utilise ici des textures de prototyping (GridBox Prototype).</em></p>
+<h2 id="illumination">Illumination</h2>
+<p>Pour avoir un rendu plus sympathique, on change la skybox par défaut d'unity et on génère les lightmaps.</p>
+<img src="img\lighting.png" width="800">
+<p><em>La skybox est bien différente, j'ai utilisé une des différentes fournies par GridBox Prototype.</em></p>
+<h2 id="joueur">Joueur</h2>
+<img src="img\player.png" width="800">
+<h3 id="gestion-des-inputs">Gestion des Inputs</h3>
+<p>Pour contrôler notre personnage, on utilise le nouveaux package <strong>Input System</strong>.
+Pour cela, on définit une <em>Carte d'Actions</em></p>
+<img src="img\actionmap.png" width="800">
+<p>Ensuite, on ajoute le component <strong>Player Input</strong> à notre joueur et on le configure en utilisant des <em>Unity Events</em>.</p>
+<p><em>La transmission ne doit surtout pas se faire en mode SendMessage ou Broadcast message dans un environnement de production !</em></p>
+<img src="img\player_input.png" width="800">
+<h3 id="mouvements">Mouvements</h3>
+<p>Afin de déplacer notre joueur, on utilise un <strong>CharacterController</strong> et on implémente notre propre physique pour le joueur.</p>
+<p>Voici une version très simplifiée:</p>
+<h4 id="playermovementcs"><strong>PlayerMovement.cs</strong></h4>
+<pre><code class="language-CSharp"><div><span class="hljs-keyword">namespace</span> <span class="hljs-title">Bot320.Gameplay.Player</span>
+{
+	[<span class="hljs-meta">RequireComponent(typeof(CharacterController))</span>]
+	<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">PlayerMovement</span> : <span class="hljs-title">MonoBehaviour</span>
+	{
+		<span class="hljs-meta">#<span class="hljs-meta-keyword">region</span> Components</span>
+		<span class="hljs-keyword">private</span> CharacterController _Controller = <span class="hljs-literal">null</span>;
+		<span class="hljs-keyword">private</span> Animator _Animator = <span class="hljs-literal">null</span>;
+		<span class="hljs-meta">#<span class="hljs-meta-keyword">endregion</span></span>
+
+		<span class="hljs-meta">#<span class="hljs-meta-keyword">region</span> Fields</span>
+		[<span class="hljs-meta">SerializeField</span>] <span class="hljs-keyword">private</span> <span class="hljs-keyword">float</span> _movementSpeed = <span class="hljs-number">1.0f</span>;
+		[<span class="hljs-meta">SerializeField</span>] <span class="hljs-keyword">private</span> <span class="hljs-keyword">float</span> _jumpForce = <span class="hljs-number">5.0f</span>;
+
+		<span class="hljs-keyword">private</span> Vector2 _inputMovement = Vector2.zero;
+		<span class="hljs-keyword">private</span> <span class="hljs-keyword">float</span> _verticalSpeed = <span class="hljs-number">0f</span>;
+		<span class="hljs-meta">#<span class="hljs-meta-keyword">endregion</span></span>
+
+		<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">Start</span>(<span class="hljs-params"></span>)</span>
+		{
+			_Controller = GetComponent&lt;CharacterController&gt;();
+			_Animator = GetComponentInChildren&lt;Animator&gt;();
+		}
+
+		<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">FixedUpdate</span>(<span class="hljs-params"></span>)</span>
+		{
+			Move();
+		}
+
+		<span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Move</span>(<span class="hljs-params"></span>)</span>
+		{
+            <span class="hljs-comment">// Input Movement is already normalized in the ActionMap</span>
+            <span class="hljs-comment">// using a Normalize Vector Processor</span>
+			<span class="hljs-keyword">var</span> horizontalSpeed = _inputMovement * _movementSpeed;
+
+			<span class="hljs-keyword">if</span> (!_Controller.isGrounded)
+			{
+				_verticalSpeed -= Physics.gravity.magnitude * Time.fixedDeltaTime;
+			}
+			<span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (_verticalSpeed &lt; <span class="hljs-number">0.0f</span>)
+			{
+				_verticalSpeed = <span class="hljs-number">0.0f</span>;
+			}
+
+			<span class="hljs-keyword">var</span> speed = <span class="hljs-keyword">new</span> Vector3(
+				horizontalSpeed.x,
+				_verticalSpeed,
+				horizontalSpeed.y
+			);
+
+            <span class="hljs-comment">// Integrate the physics here</span>
+            <span class="hljs-comment">// dx = v * dt</span>
+			_Controller.Move(speed * Time.fixedDeltaTime);
+			_Animator.SetFloat(<span class="hljs-string">"Speed"</span>, horizontalSpeed.magnitude);
+
+			<span class="hljs-keyword">if</span> (horizontalSpeed.sqrMagnitude &gt; <span class="hljs-number">0.1f</span>)
+			{
+				transform.forward = <span class="hljs-keyword">new</span> Vector3(
+					horizontalSpeed.x,
+					<span class="hljs-number">0</span>,
+					horizontalSpeed.y
+				);
+			}
+
+		}
+
+		<span class="hljs-meta">#<span class="hljs-meta-keyword">region</span> Input Events</span>
+        <span class="hljs-comment">// Called from the PlayerInput Component</span>
+
+		<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">OnMove</span>(<span class="hljs-params">InputAction.CallbackContext ctx</span>)</span>
+		{
+			_inputMovement = ctx.ReadValue&lt;Vector2&gt;();
+		}
+
+		<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">OnJump</span>(<span class="hljs-params">InputAction.CallbackContext ctx</span>)</span>
+		{
+			<span class="hljs-keyword">if</span> (_Controller.isGrounded)
+			{
+				_verticalSpeed = _jumpForce;
+			}
+		}
+		<span class="hljs-meta">#<span class="hljs-meta-keyword">endregion</span></span>
+	}
+}
+</div></code></pre>
+<h3 id="particules">Particules</h3>
+<p>Pour donner un peu d'interaction entre le joueur et son environnement,
+on ajoute des particules lorsque celui ci cours sur le sol.
+Pour se faire, on ajoute des particule systems sur ses pieds, et on utilise les <em>Animation Events</em> lors de la frame correspondante.</p>
+<img src="img\anim_event.png" width="800">  
+<br>
+<img src="img\run.gif" width="800">
+<h2 id="collectables">Collectables</h2>
+<p>On créer ensuite notre prefab <strong>Coin</strong>.<br>
+<img src="img\coin.png" width="800"></p>
+<h3 id="animations">Animations</h3>
+<p>Pour donner de la vie à la scène et une interaction, on créer deux simples animations pour les pièces : <em>Idle</em> et <em>Pickup</em>.
+L'animation <em>Pickup</em> détruira automatiquement la pièce uen fois celle ci terminée.</p>
+<img src="img\coin_anims.png" width="800">
+<p>On ajoute ensuite notre collider en mode trigger, avec un script <em>Collectable</em></p>
+<h4 id="collectablecs"><strong>Collectable.cs</strong></h4>
+<pre><code class="language-CSharp"><div><span class="hljs-keyword">namespace</span> <span class="hljs-title">Bot320.Gameplay.Collectables</span>
+{
+
+	<span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">Collectable</span> : <span class="hljs-title">MonoBehaviour</span>
+	{
+
+		[<span class="hljs-meta">SerializeField</span>] UnityEvent _onPickup;
+		<span class="hljs-keyword">private</span> Animator _Animator;
+
+		<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">Start</span>(<span class="hljs-params"></span>)</span>
+		{
+			_Animator = GetComponentInChildren&lt;Animator&gt;();
+		}
+
+		<span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">OnTriggerEnter</span>(<span class="hljs-params">Collider other</span>)</span>
+		{
+			<span class="hljs-keyword">if</span> (other.CompareTag(<span class="hljs-string">"Player"</span>) == <span class="hljs-literal">true</span>)
+			{
+				<span class="hljs-keyword">if</span> (_Animator)
+				{
+					_Animator.SetTrigger(<span class="hljs-string">"Pickup"</span>);
+				}
+				_onPickup.Invoke();
+			}
+		}
+	}
+}
+</div></code></pre>
+<img src="img\coin_pickup.gif" width="800">
+<h3 id="son">Son</h3>
+<p>On ajoute ensuite une AudioSource sur notre pièce, et on utilise notre <em>Unity Event : On Pickup</em> pour jouer le son.</p>
+<img src="img\sound.png" width="800">
+<h3 id="score">Score</h3>
+<p>On ajoute un simple texte sur l'UI, et on lie le tout.<br>
+<img src="img\ui.png" width="800"></p>
+<h2 id="conclusion">Conclusion</h2>
+<p>On a ici la base d'un platformer 3D, dans la suite, on travaillera sur les menus, et on ajoutera des GPE (GamePlay Elements), on peaufinera aussi le joueur (jump animations...) et la physique de celui ci.</p>
+
+    </body>
+    </html>
