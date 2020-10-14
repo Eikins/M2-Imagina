@@ -335,7 +335,7 @@ void HPSS(Vec3 inputPoint, Vec3 &outputPoint, Vec3 &outputNormal, std::vector<Ve
     std::vector<Vec3> const &normals, BasicANNkdTree const &kdtree, int kernel_type, float radius, 
     unsigned int nbIterations = 10, unsigned int knn = 20)
     {
-        const int k = 4;
+        const int k = 50;
         std::array<ANNidx, k> neighbourIds;
         std::array<ANNdist, k> neighbourSqDist;
 
@@ -404,8 +404,6 @@ int main (int argc, char ** argv) {
         // PROJECT USING MLS (HPSS and APSS):
         // TODO
     }
-
-
 
     glutMainLoop ();
     return EXIT_SUCCESS;
