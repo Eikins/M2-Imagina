@@ -75,6 +75,8 @@ public:
     ~MainWidget();
 
 protected:
+    void keyPressEvent(QKeyEvent *e) override;
+    void keyReleaseEvent(QKeyEvent *e) override;
     void mousePressEvent(QMouseEvent *e) override;
     void mouseReleaseEvent(QMouseEvent *e) override;
     void timerEvent(QTimerEvent *e) override;
@@ -99,6 +101,10 @@ private:
     QMatrix4x4 view;
 
     QVector2D mousePressPosition;
+    QVector2D _movementInput;
+    qreal _cameraSpeed;
+    qreal _cameraDistance;
+    qreal _cameraAngle;
     QVector3D rotationAxis;
     qreal angularSpeed;
     QQuaternion rotation;

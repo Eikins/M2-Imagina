@@ -4,6 +4,8 @@ uniform mat4 mat_ObjectToWorld;
 uniform mat4 mat_WorldToView;
 uniform mat4 mat_ViewToClip;
 
+uniform vec4 cam_Position;
+
 uniform sampler2D _HeightMap;
 
 in vec3 position;
@@ -37,6 +39,9 @@ void main()
     // Terrain height
     pos.y += texture2D(_HeightMap, texCoord0).r * MAX_HEIGHT;
     v_osPos = pos.xyz;
+
+//    float camHeight = texture2D(_HeightMap, cam_Position.xz).r * MAX_HEIGHT;
+//    pos.y -= camHeight;
 
     pos = ObjectToWorld(pos);
     pos = WorldToView(pos);

@@ -17,6 +17,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <array>
 #include <algorithm>
 #include <string>
 #include <cstdio>
@@ -330,7 +331,35 @@ void reshape(int w, int h) {
     camera.resize (w, h);
 }
 
+void HPSS(Vec3 inputPoint, Vec3 &outputPoint, Vec3 &outputNormal, std::vector<Vec3> const &positions,
+    std::vector<Vec3> const &normals, BasicANNkdTree const &kdtree, int kernel_type, float radius, 
+    unsigned int nbIterations = 10, unsigned int knn = 20)
+    {
+        const int k = 4;
+        std::array<ANNidx, k> neighbourIds;
+        std::array<ANNdist, k> neighbourSqDist;
 
+        const auto kKernels{
+            // Singular
+            [] (float r) -> float {
+
+            },
+            // Gaussian
+            [] (float r)  -> float {
+
+            },
+            // Wendland
+            [] (float r)  -> float {
+
+            }
+        }
+
+        for (unsigned int i = 0; i < nbIterations; i++)
+        {
+            kdtree.knearest(inputPoint, k, neighbourIds.data(), neighbourSqDist.data());
+
+        }
+    }
 
 int main (int argc, char ** argv) {
     if (argc > 2) {
@@ -361,12 +390,13 @@ int main (int argc, char ** argv) {
         // Create a second pointset that is artificial, and project it on pointset1 using MLS techniques:
         positions2.resize( 20000 );
         normals2.resize(positions2.size());
-        for( unsigned int pIt = 0 ; pIt < positions2.size() ; ++pIt ) {
+        for(unsigned int pIt = 0; pIt < positions2.size(); ++pIt)
+        {
             positions2[pIt] = Vec3(
-                        -0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX),
-                        -0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX),
-                        -0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX)
-                        );
+                -0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX),
+                -0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX),
+                -0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX)
+            );
             positions2[pIt].normalize();
             positions2[pIt] = 0.6 * positions2[pIt];
         }

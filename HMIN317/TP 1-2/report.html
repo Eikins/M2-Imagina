@@ -26,8 +26,8 @@
     <body class="vscode-light">
         <h1 id="hmin-317---moteurs-de-jeux--prise-en-main-de-qt-creator-git-et-opengl-es-30">HMIN 317 - Moteurs de Jeux : Prise en main de Qt Creator, Git et OpenGL ES 3.0</h1>
 <h2 id="transformations">Transformations</h2>
-<p>Un <code>GameObject</code> doit pourvoir subir différentes opérations mathématiques pour pouvoir le positionner et orienter dans l'espace.</p>
-<p>Pour se faire, on utilise les <strong>matrices de transformations</strong>.</p>
+<p>Un <code>Objet 3D</code> doit pourvoir subir différentes opérations mathématiques pour pouvoir le positionner et orienter dans l'espace.
+Pour se faire, on utilise les <strong>matrices de transformations</strong>.</p>
 <p>Les trois transformations nécessaires pour représenter un objet sont :</p>
 <ul>
 <li>Les translations <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>T</mi></mrow><annotation encoding="application/x-tex">T</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathdefault" style="margin-right:0.13889em;">T</span></span></span></span></li>
@@ -57,65 +57,199 @@ transform.scale(scale);
 </div></code></pre>
 <p><em>Pour la 2D, il existe l'équivalent <a href="https://doc.qt.io/qt-5/qtransform.html#details"><code>QTransform</code> 🔗</a></em></p>
 <h2 id="dessin-en-3d">Dessin en 3D</h2>
+<p>Pour dessiner des objets sur l'écran, on utilise ici une surcouche d'<strong>OpenGL</strong>.
+On crée des <code>QOpenGLBuffer</code> pour définir nos VBOs.</p>
+<p>Notre code de rendu ira dans la méthode <code>paintGL</code> de la classe <code>MainWidget</code>.</p>
+<p>➡️<a href="https://doc.qt.io/qt-5.9/qopenglwidget.html">QOpenGLWidget Documentation 🔗</a></p>
+<h2 id="gestion-des-inputs">Gestion des Inputs</h2>
+<p>Pour gérer les entrées utilisateurs, on utilise les callbacks fournis par la classe <code>QWidget</code>.</p>
+<p>➡️<a href="https://doc.qt.io/qt-5/qwidget.html#protected-functions">QWidget Event Callbacks 🔗</a></p>
 <h2 id="génération-de-terrain-avec-une-heightmap">Génération de terrain avec une Heightmap</h2>
 <h3 id="génération-dun-plan-subdivisé">Génération d'un plan subdivisé</h3>
 <p>La première étape consiste à générer un plan subdivisé sur lequel nous allons ensuite modifier la hauteur des sommets.</p>
 <p>Pour se faire, nous utilisons un <a href="https://en.wikipedia.org/wiki/Triangle_strip">Triangle Strip 🔗</a>.</p>
 <p><em>Une autre méthode est d'utiliser des éléments, mais moins optimal.   <a href="https://github.com/Eikins/3D-Sea-Project/blob/master/sea3d/core/mesh.py#L118"><code>Mesh.Plane</code> 🔗</a></em></p>
-<pre><code class="language-C++"><div><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">VertexData</span>
-{</span>
-    QVector3D position;
-    QVector2D texCoord;
-};
-
-
-<span class="hljs-keyword">void</span> Terrain::generatePlaneGeometry(<span class="hljs-keyword">int</span> width, <span class="hljs-keyword">int</span> length, <span class="hljs-keyword">int</span> widthSegments, <span class="hljs-keyword">int</span> lengthSegments)
+<h4 id="implémentation">Implémentation</h4>
+<p>➡️ <a href="https://github.com/Eikins/M2-Imagina/blob/master/HMIN317/TP%201-2/QtProject/geometryengine.cpp#L83">geometryengine.cpp::generatePlaneGeometry🔗</a></p>
+<p>On modifie la hauteur des vertices au runtime.
+On applique ensuite une texture en fonction de la hauteur.<br>
+On travaille toujours dans l'<em>Object Space</em> pour rester indépendant des transformations appliquées au terrain.</p>
+<h4 id="terrain_vertexglsl">terrain_vertex.glsl</h4>
+<pre><code class="language-GLSL"><div><span class="hljs-type">void</span> main()
 {
-    <span class="hljs-keyword">int</span> xCount = widthSegments + <span class="hljs-number">1</span>;
-    <span class="hljs-keyword">int</span> zCount = widthSegments + <span class="hljs-number">1</span>;
+    v_texCoord0 = texCoord0;
 
-    <span class="hljs-keyword">int</span> vertexCount = xCount * zCount;
-    <span class="hljs-keyword">int</span> indexCount = vertexCount + length;
+    <span class="hljs-type">vec4</span> pos = <span class="hljs-type">vec4</span>(position, <span class="hljs-number">1.0</span>);
+    <span class="hljs-comment">// Terrain height displacement</span>
+    pos.y += <span class="hljs-built_in">texture2D</span>(_HeightMap, texCoord0).r * MAX_HEIGHT;
+    v_osPos = pos.xyz;
 
-    <span class="hljs-built_in">std</span>::<span class="hljs-built_in">vector</span>&lt;VertexData&gt; vertices(vertexCount);
-    <span class="hljs-built_in">std</span>::<span class="hljs-built_in">vector</span>&lt;GLushort&gt; indices(indexCount);
-
-    <span class="hljs-comment">// Create vertices by lines</span>
-    <span class="hljs-comment">// 0 -- 1 -- ... -- W</span>
-    <span class="hljs-comment">// |    |     |     |</span>
-    <span class="hljs-comment">// W+1  . --  . --  2W</span>
-    <span class="hljs-comment">// |    |     |     |</span>
-    <span class="hljs-comment">// . -- . --  . --  .</span>
-    <span class="hljs-comment">// |    |     |     |</span>
-    <span class="hljs-comment">// . -- . --  . --  LW</span>
-
-    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> x = <span class="hljs-number">0</span>; x &lt; xCount; x++)
-    {
-        <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> z = <span class="hljs-number">0</span>; z &lt; zCount; z++)
-        {
-            <span class="hljs-keyword">float</span> u = ((<span class="hljs-keyword">float</span>) x) / xCount;
-            <span class="hljs-keyword">float</span> v = ((<span class="hljs-keyword">float</span>) z) / zCount;
-            <span class="hljs-function">QVector3 <span class="hljs-title">position</span><span class="hljs-params">(u * width, v * length)</span></span>;
-            <span class="hljs-function">QVector2 <span class="hljs-title">texCoord</span><span class="hljs-params">(u, v)</span></span>;
-            vertices.push_back({position, texCoord});
-        }
-    }
-
-    <span class="hljs-comment">// <span class="hljs-doctag">TODO:</span> Indices</span>
-    <span class="hljs-comment">// 0 w+1 1 w+2 3 .... w-1 2w-1 2w-1</span>
-    <span class="hljs-comment">// ...</span>
-    <span class="hljs-comment">// pair =&gt; left to right</span>
-    <span class="hljs-comment">// impair =&gt; right to left</span>
-
-    <span class="hljs-comment">// Transfer vertex data to VBO 0</span>
-    glBindBuffer(GL_ARRAY_BUFFER, vboIds[<span class="hljs-number">0</span>]);
-    glBufferData(GL_ARRAY_BUFFER, vertexCount * <span class="hljs-keyword">sizeof</span>(VertexData), &amp;vertices[<span class="hljs-number">0</span>], GL_STATIC_DRAW);
-
-    <span class="hljs-comment">// Transfer index data to VBO 1</span>
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vboIds[<span class="hljs-number">1</span>]);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, indexCount * <span class="hljs-keyword">sizeof</span>(GLushort), &amp;indices[<span class="hljs-number">0</span>], GL_STATIC_DRAW);
+    <span class="hljs-built_in">gl_Position</span> = ObjectToClip(pos);
 }
 </div></code></pre>
+<h4 id="terrain_fragmentglsl">terrain_fragment.glsl</h4>
+<pre><code class="language-GLSL"><div><span class="hljs-type">void</span> main()
+{
+    <span class="hljs-type">vec3</span> color;
+    <span class="hljs-type">vec3</span> rockColor = <span class="hljs-built_in">texture2D</span>(_RockTexMap, v_texCoord0 * <span class="hljs-number">10</span>).xyz;
+    <span class="hljs-keyword">if</span> (v_osPos.y &gt; ROCK_HEIGHT)
+    {
+        <span class="hljs-type">vec3</span> snowrockColor = <span class="hljs-built_in">texture2D</span>(_SnowrockTexMap, v_texCoord0 * <span class="hljs-number">10</span>).xyz;
+        color = <span class="hljs-built_in">mix</span>(rockColor, snowrockColor, (v_osPos.y - ROCK_HEIGHT) / (SNOW_HEIGHT - ROCK_HEIGHT));
+    }
+    <span class="hljs-keyword">else</span>
+    {
+        <span class="hljs-type">vec3</span> grassColor = <span class="hljs-built_in">texture2D</span>(_GrassTexMap, v_texCoord0 * <span class="hljs-number">10</span>).xyz;
+        color = <span class="hljs-built_in">mix</span>(grassColor, rockColor, (v_osPos.y - GRASS_HEIGHT) / (ROCK_HEIGHT - GRASS_HEIGHT));
+    }
+
+    <span class="hljs-built_in">gl_FragColor</span> = <span class="hljs-type">vec4</span>(color, <span class="hljs-number">1.0</span>);
+}
+</div></code></pre>
+<h4 id="résultat">Résultat</h4>
+<img src="img\terrain.png" width="600">
+<h2 id="gestion-de-la-caméra">Gestion de la Caméra</h2>
+<p>Pour calculer les coordonnées dans le <em>Clip Space</em> des objets, on utilises deux matrices définis par notre caméra.</p>
+<p><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>M</mi><mi>V</mi><mi>P</mi><mo>=</mo><mi>P</mi><mo>×</mo><mi>V</mi><mo>×</mo><mi>M</mi></mrow><annotation encoding="application/x-tex">MVP = P \times V \times M
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathdefault" style="margin-right:0.10903em;">M</span><span class="mord mathdefault" style="margin-right:0.22222em;">V</span><span class="mord mathdefault" style="margin-right:0.13889em;">P</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:0.76666em;vertical-align:-0.08333em;"></span><span class="mord mathdefault" style="margin-right:0.13889em;">P</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.76666em;vertical-align:-0.08333em;"></span><span class="mord mathdefault" style="margin-right:0.22222em;">V</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathdefault" style="margin-right:0.10903em;">M</span></span></span></span></span></p>
+<table>
+<thead>
+<tr>
+<th>Matrice</th>
+<th>Nom</th>
+<th>Transformation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>M</mi></mrow><annotation encoding="application/x-tex">M</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathdefault" style="margin-right:0.10903em;">M</span></span></span></span></td>
+<td>Model</td>
+<td><em>Object Space</em> <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>→</mo></mrow><annotation encoding="application/x-tex">\to</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.36687em;vertical-align:0em;"></span><span class="mrel">→</span></span></span></span> <em>World Space</em></td>
+</tr>
+<tr>
+<td><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>V</mi></mrow><annotation encoding="application/x-tex">V</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathdefault" style="margin-right:0.22222em;">V</span></span></span></span></td>
+<td>Vue</td>
+<td><em>World Space</em> <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>→</mo></mrow><annotation encoding="application/x-tex">\to</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.36687em;vertical-align:0em;"></span><span class="mrel">→</span></span></span></span> <em>View Space</em></td>
+</tr>
+<tr>
+<td><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>P</mi></mrow><annotation encoding="application/x-tex">P</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathdefault" style="margin-right:0.13889em;">P</span></span></span></span></td>
+<td>Projection</td>
+<td><em>View Space</em> <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mo>→</mo></mrow><annotation encoding="application/x-tex">\to</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.36687em;vertical-align:0em;"></span><span class="mrel">→</span></span></span></span> <em>Clip Space</em></td>
+</tr>
+</tbody>
+</table>
+<p><em>Note: Si on souhaite définir la caméra comme un objet de la scène, on a alors la propriété: <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>V</mi><mrow><mi>C</mi><mi>a</mi><mi>m</mi></mrow></msub><mo>=</mo><msubsup><mi>M</mi><mrow><mi>C</mi><mi>a</mi><mi>m</mi></mrow><mrow><mo>−</mo><mn>1</mn></mrow></msubsup></mrow><annotation encoding="application/x-tex">V_{Cam} = M_{Cam}^{-1}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.83333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathdefault" style="margin-right:0.22222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.32833099999999993em;"><span style="top:-2.5500000000000003em;margin-left:-0.22222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathdefault mtight" style="margin-right:0.07153em;">C</span><span class="mord mathdefault mtight">a</span><span class="mord mathdefault mtight">m</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:1.14777em;vertical-align:-0.293531em;"></span><span class="mord"><span class="mord mathdefault" style="margin-right:0.10903em;">M</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.854239em;"><span style="top:-2.4064690000000004em;margin-left:-0.10903em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathdefault mtight" style="margin-right:0.07153em;">C</span><span class="mord mathdefault mtight">a</span><span class="mord mathdefault mtight">m</span></span></span></span><span style="top:-3.1031310000000003em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">−</span><span class="mord mtight">1</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.293531em;"><span></span></span></span></span></span></span></span></span></span>.<br>
+On ajoutera aussi que définir une homothétie pour une caméra n'a pas de sens,
+<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>M</mi><mrow><mi>C</mi><mi>a</mi><mi>m</mi></mrow></msub><mo>=</mo><msub><mi>T</mi><mrow><mi>C</mi><mi>a</mi><mi>m</mi></mrow></msub><mo>×</mo><msub><mi>R</mi><mrow><mi>C</mi><mi>a</mi><mi>m</mi></mrow></msub></mrow><annotation encoding="application/x-tex">M_{Cam} = T_{Cam} \times R_{Cam}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.83333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathdefault" style="margin-right:0.10903em;">M</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.32833099999999993em;"><span style="top:-2.5500000000000003em;margin-left:-0.10903em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathdefault mtight" style="margin-right:0.07153em;">C</span><span class="mord mathdefault mtight">a</span><span class="mord mathdefault mtight">m</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:0.83333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathdefault" style="margin-right:0.13889em;">T</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.32833099999999993em;"><span style="top:-2.5500000000000003em;margin-left:-0.13889em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathdefault mtight" style="margin-right:0.07153em;">C</span><span class="mord mathdefault mtight">a</span><span class="mord mathdefault mtight">m</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:0.83333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathdefault" style="margin-right:0.00773em;">R</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.32833099999999993em;"><span style="top:-2.5500000000000003em;margin-left:-0.00773em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathdefault mtight" style="margin-right:0.07153em;">C</span><span class="mord mathdefault mtight">a</span><span class="mord mathdefault mtight">m</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>. Ce qui nous donne facilement <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>V</mi><mrow><mi>C</mi><mi>a</mi><mi>m</mi></mrow></msub></mrow><annotation encoding="application/x-tex">V_{Cam}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.83333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathdefault" style="margin-right:0.22222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.32833099999999993em;"><span style="top:-2.5500000000000003em;margin-left:-0.22222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathdefault mtight" style="margin-right:0.07153em;">C</span><span class="mord mathdefault mtight">a</span><span class="mord mathdefault mtight">m</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span>.</em></p>
+<p><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msub><mi>V</mi><mrow><mi>C</mi><mi>a</mi><mi>m</mi></mrow></msub><mo>=</mo><mo stretchy="false">(</mo><msub><mi>R</mi><mrow><mi>C</mi><mi>a</mi><mi>m</mi></mrow></msub><msup><mo stretchy="false">)</mo><mi>T</mi></msup><mo>×</mo><mo stretchy="false">(</mo><msub><mi>T</mi><mrow><mi>C</mi><mi>a</mi><mi>m</mi></mrow></msub><msup><mo stretchy="false">)</mo><mrow><mo>−</mo><mn>1</mn></mrow></msup></mrow><annotation encoding="application/x-tex">V_{Cam} = (R_{Cam})^T \times (T_{Cam})^{-1}
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.83333em;vertical-align:-0.15em;"></span><span class="mord"><span class="mord mathdefault" style="margin-right:0.22222em;">V</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.32833099999999993em;"><span style="top:-2.5500000000000003em;margin-left:-0.22222em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathdefault mtight" style="margin-right:0.07153em;">C</span><span class="mord mathdefault mtight">a</span><span class="mord mathdefault mtight">m</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:1.1413309999999999em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord"><span class="mord mathdefault" style="margin-right:0.00773em;">R</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.32833099999999993em;"><span style="top:-2.5500000000000003em;margin-left:-0.00773em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathdefault mtight" style="margin-right:0.07153em;">C</span><span class="mord mathdefault mtight">a</span><span class="mord mathdefault mtight">m</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose"><span class="mclose">)</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8913309999999999em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathdefault mtight" style="margin-right:0.13889em;">T</span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2222222222222222em;"></span><span class="mbin">×</span><span class="mspace" style="margin-right:0.2222222222222222em;"></span></span><span class="base"><span class="strut" style="height:1.1141079999999999em;vertical-align:-0.25em;"></span><span class="mopen">(</span><span class="mord"><span class="mord mathdefault" style="margin-right:0.13889em;">T</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.32833099999999993em;"><span style="top:-2.5500000000000003em;margin-left:-0.13889em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathdefault mtight" style="margin-right:0.07153em;">C</span><span class="mord mathdefault mtight">a</span><span class="mord mathdefault mtight">m</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose"><span class="mclose">)</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.864108em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">−</span><span class="mord mtight">1</span></span></span></span></span></span></span></span></span></span></span></span></span></p>
+<h3 id="déplacement-de-la-caméra-à-hauteur-du-terrain">Déplacement de la caméra à hauteur du terrain</h3>
+<p>Pour se faire, il suffit de récupérer la position de la caméra dans l'<em>Object Space</em> du terrain et de sampler la hauteur de celle ci. Cette opération peut se faire au vertex shader, tout comme du côté du CPU.</p>
+<p>Ici, on simplifie car on sait que notre terrain n'a aucune transformation, on utilise donc directement la position <em>World Space</em> de la caméra.</p>
+<h4 id="terrain_vertexglsl-1">terrain_vertex.glsl</h4>
+<pre><code class="language-GLSL"><div><span class="hljs-type">void</span> main()
+{
+    v_texCoord0 = texCoord0;
+
+    <span class="hljs-type">vec4</span> pos = <span class="hljs-type">vec4</span>(position, <span class="hljs-number">1.0</span>);
+    <span class="hljs-comment">// Terrain height</span>
+    pos.y += <span class="hljs-built_in">texture2D</span>(_HeightMap, texCoord0).r * MAX_HEIGHT;
+    v_osPos = pos.xyz;
+
+    <span class="hljs-comment">// If we want to support terrain transforms, then we need</span>
+    <span class="hljs-comment">// the inverse model (mat_ObjectToWorld_I) of the terrain</span>
+    <span class="hljs-comment">// and then transform the cam_Position</span>
+    <span class="hljs-type">float</span> camHeight = <span class="hljs-built_in">texture2D</span>(_HeightMap, cam_Position.xz).r * MAX_HEIGHT;
+    pos.y -= camHeight;
+
+    <span class="hljs-built_in">gl_Position</span> = ObjectToClip(pos);
+}
+</div></code></pre>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="img\terrain_cam_0.png" width="200"></td>
+<td><img src="img\terrain_cam_1.png" width="200"></td>
+<td><img src="img\terrain_cam_2.png" width="200"></td>
+</tr>
+</tbody>
+</table>
+<h3 id="caméra-rotative">Caméra rotative</h3>
+<p>On peut faire tourner la caméra autour du point <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>O</mi></mrow><annotation encoding="application/x-tex">O</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathdefault" style="margin-right:0.02778em;">O</span></span></span></span> avec un angle de 45°.</p>
+<img src="img\cam_rotate.png" width="300">
+<p>Pour se faire, on définit une distance <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>D</mi></mrow><annotation encoding="application/x-tex">D</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.68333em;vertical-align:0em;"></span><span class="mord mathdefault" style="margin-right:0.02778em;">D</span></span></span></span> au centre.
+On définit une vitesse <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>v</mi></mrow><annotation encoding="application/x-tex">v</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.43056em;vertical-align:0em;"></span><span class="mord mathdefault" style="margin-right:0.03588em;">v</span></span></span></span> en unité par seconde.</p>
+<p>On obtient aisément:<br>
+<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>d</mi><mo>=</mo><mfrac><mi>D</mi><msqrt><mn>2</mn></msqrt></mfrac></mrow><annotation encoding="application/x-tex">d = \frac{D}{\sqrt{2}}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.69444em;vertical-align:0em;"></span><span class="mord mathdefault">d</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:1.4103309999999998em;vertical-align:-0.5379999999999999em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.872331em;"><span style="top:-2.5510085em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord sqrt mtight"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.912845em;"><span class="svg-align" style="top:-3em;"><span class="pstrut" style="height:3em;"></span><span class="mord mtight" style="padding-left:0.833em;"><span class="mord mtight">2</span></span></span><span style="top:-2.872845em;"><span class="pstrut" style="height:3em;"></span><span class="hide-tail mtight" style="min-width:0.853em;height:1.08em;"><svg width='400em' height='1.08em' viewBox='0 0 400000 1080' preserveAspectRatio='xMinYMin slice'><path d='M95,702
+c-2.7,0,-7.17,-2.7,-13.5,-8c-5.8,-5.3,-9.5,-10,-9.5,-14
+c0,-2,0.3,-3.3,1,-4c1.3,-2.7,23.83,-20.7,67.5,-54
+c44.2,-33.3,65.8,-50.3,66.5,-51c1.3,-1.3,3,-2,5,-2c4.7,0,8.7,3.3,12,10
+s173,378,173,378c0.7,0,35.3,-71,104,-213c68.7,-142,137.5,-285,206.5,-429
+c69,-144,104.5,-217.7,106.5,-221
+l0 -0
+c5.3,-9.3,12,-14,20,-14
+H400000v40H845.2724
+s-225.272,467,-225.272,467s-235,486,-235,486c-2.7,4.7,-9,7,-19,7
+c-6,0,-10,-1,-12,-3s-194,-422,-194,-422s-65,47,-65,47z
+M834 80h400000v40h-400000z'/></svg></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.12715500000000002em;"><span></span></span></span></span></span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.394em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathdefault mtight" style="margin-right:0.02778em;">D</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.5379999999999999em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span>,
+<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>ω</mi><mo>=</mo><mfrac><mrow><mi>d</mi><mi>θ</mi></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac><mo>=</mo><mfrac><mi>v</mi><mi>d</mi></mfrac></mrow><annotation encoding="application/x-tex">\omega = \frac{d\theta}{dt} = \frac{v}{d}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.43056em;vertical-align:0em;"></span><span class="mord mathdefault" style="margin-right:0.03588em;">ω</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:1.2251079999999999em;vertical-align:-0.345em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.8801079999999999em;"><span style="top:-2.6550000000000002em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathdefault mtight">d</span><span class="mord mathdefault mtight">t</span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.394em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathdefault mtight">d</span><span class="mord mathdefault mtight" style="margin-right:0.02778em;">θ</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.345em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:1.040392em;vertical-align:-0.345em;"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.695392em;"><span style="top:-2.6550000000000002em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathdefault mtight">d</span></span></span></span><span style="top:-3.23em;"><span class="pstrut" style="height:3em;"></span><span class="frac-line" style="border-bottom-width:0.04em;"></span></span><span style="top:-3.394em;"><span class="pstrut" style="height:3em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathdefault mtight" style="margin-right:0.03588em;">v</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.345em;"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span><br>
+<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi><mo>=</mo><mi>d</mi><mi>cos</mi><mo>⁡</mo><mo stretchy="false">(</mo><mi>θ</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">x = d \cos(\theta)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.43056em;vertical-align:0em;"></span><span class="mord mathdefault">x</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathdefault">d</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mop">cos</span><span class="mopen">(</span><span class="mord mathdefault" style="margin-right:0.02778em;">θ</span><span class="mclose">)</span></span></span></span><br>
+<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>y</mi><mo>=</mo><mi>d</mi></mrow><annotation encoding="application/x-tex">y = d</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.625em;vertical-align:-0.19444em;"></span><span class="mord mathdefault" style="margin-right:0.03588em;">y</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:0.69444em;vertical-align:0em;"></span><span class="mord mathdefault">d</span></span></span></span><br>
+<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>z</mi><mo>=</mo><mi>d</mi><mi>sin</mi><mo>⁡</mo><mo stretchy="false">(</mo><mi>θ</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">z = d \sin(\theta)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.43056em;vertical-align:0em;"></span><span class="mord mathdefault" style="margin-right:0.04398em;">z</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathdefault">d</span><span class="mspace" style="margin-right:0.16666666666666666em;"></span><span class="mop">sin</span><span class="mopen">(</span><span class="mord mathdefault" style="margin-right:0.02778em;">θ</span><span class="mclose">)</span></span></span></span></p>
+<p>Pour l'orientation, on utilise simplement la méthode <code>lookAt</code>.</p>
+<pre><code class="language-C++"><div>    _cameraAngle += _cameraSpeed * <span class="hljs-number">0.016</span> / _cameraDistance;
+    <span class="hljs-keyword">if</span> (_cameraAngle &gt; TAU) _cameraAngle -= TAU;
+    <span class="hljs-function">QVector3D <span class="hljs-title">camPos</span><span class="hljs-params">(
+        _cameraDistance * <span class="hljs-built_in">cos</span>(_cameraAngle),
+        _cameraDistance,
+        _cameraDistance * <span class="hljs-built_in">sin</span>(_cameraAngle)
+    )</span></span>;
+
+    <span class="hljs-function">QVector3D <span class="hljs-title">camUp</span><span class="hljs-params">(camPos)</span></span>;
+    camUp.setX(-camUp.x());
+    camUp.setZ(-camUp.z());
+
+    <span class="hljs-comment">// LookAt method directly gives inverted matrix</span>
+    <span class="hljs-comment">// This is not optimal because we work with the camera</span>
+    <span class="hljs-comment">// model and we need to invert it again.</span>
+    <span class="hljs-comment">// But we don't care about perfs for now.</span>
+    QMatrix4x4 lookAtMat;
+    lookAtMat.lookAt(camPos, QVector3D(<span class="hljs-number">0.0F</span>, <span class="hljs-number">0.0F</span>, <span class="hljs-number">0.0F</span>), camUp);
+    view = lookAtMat.inverted();
+
+    update();
+</div></code></pre>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="img\lookat_0.png" width="200"></td>
+<td><img src="img\lookat_1.png" width="200"></td>
+</tr>
+</tbody>
+</table>
+<h2 id="taux-de-rafraîchissements">Taux de rafraîchissements</h2>
+<p>Jusqu'à maintenant, on définissait la vitesse indépendant du framerate et tu temps écoulé entre deux frames.</p>
+<p>Cela veut donc dire que notre jeux serait ralentit si le framerate est bas.<br>
+C'est ce que l'on observe si on compare 4 fenêtres avec des fréquences différentes.</p>
+<p>Certains jeux de combats restent frame-dependent, car on essaye de donner au joueur un feedback constant par rapport à ses inputs et ce qu'il observe, mais ce n'est pas convenable pour la plupart des jeux.</p>
+<p>La solution d'utiliser la <a href="https://fr.wikipedia.org/wiki/M%C3%A9thode_des_diff%C3%A9rences_finies">Méthode des différences finies 🔗</a>.<br>
+On échantillone notre espace de temps en calculant le temps écoulé entre deux frames, souvent dénomé <code>deltaTime</code>.<br>
+Grâce à ça, on peut résoudre les équations de déplacements de notre caméra correctement.</p>
+<p><em>Note: Contrairement à une simulation, on est obligé d'utiliser un schéma explicite (qui utilise des valeurs de temps passées uniquement), cela qui un problème au niveau de la convergence de la solution, mais ce n'est pas un problème pour les jeux.<br>
+C'est d'ailleurs aussi la discretisation qui crée les bugs de non détection de collisions lorsque la vitesse des objets est trop élevées.</em></p>
 
     </body>
     </html>

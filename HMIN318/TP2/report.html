@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>report.md</title>
+<meta http-equiv="Content-type" content="text/html;charset=UTF-8">
+
+<style>
+/* https://github.com/microsoft/vscode/blob/master/extensions/markdown-language-features/media/markdown.css */
+/*---------------------------------------------------------------------------------------------
+ *  Copyright (c) Microsoft Corporation. All rights reserved.
+ *  Licensed under the MIT License. See License.txt in the project root for license information.
+ *--------------------------------------------------------------------------------------------*/
+
+body {
+	font-family: var(--vscode-markdown-font-family, -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif);
+	font-size: var(--vscode-markdown-font-size, 14px);
+	padding: 0 26px;
+	line-height: var(--vscode-markdown-line-height, 22px);
+	word-wrap: break-word;
+}
+
+#code-csp-warning {
+	position: fixed;
+	top: 0;
+	right: 0;
+	color: white;
+	margin: 16px;
+	text-align: center;
+	font-size: 12px;
+	font-family: sans-serif;
+	background-color:#444444;
+	cursor: pointer;
+	padding: 6px;
+	box-shadow: 1px 1px 1px rgba(0,0,0,.25);
+}
+
+#code-csp-warning:hover {
+	text-decoration: none;
+	background-color:#007acc;
+	box-shadow: 2px 2px 2px rgba(0,0,0,.25);
+}
+
+body.scrollBeyondLastLine {
+	margin-bottom: calc(100vh - 22px);
+}
+
+body.showEditorSelection .code-line {
+	position: relative;
+}
+
+body.showEditorSelection .code-active-line:before,
+body.showEditorSelection .code-line:hover:before {
+	content: "";
+	display: block;
+	position: absolute;
+	top: 0;
+	left: -12px;
+	height: 100%;
+}
+
+body.showEditorSelection li.code-active-line:before,
+body.showEditorSelection li.code-line:hover:before {
+	left: -30px;
+}
+
+.vscode-light.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.15);
+}
+
+.vscode-light.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(0, 0, 0, 0.40);
+}
+
+.vscode-light.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-dark.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.4);
+}
+
+.vscode-dark.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 255, 255, 0.60);
+}
+
+.vscode-dark.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+.vscode-high-contrast.showEditorSelection .code-active-line:before {
+	border-left: 3px solid rgba(255, 160, 0, 0.7);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line:hover:before {
+	border-left: 3px solid rgba(255, 160, 0, 1);
+}
+
+.vscode-high-contrast.showEditorSelection .code-line .code-line:hover:before {
+	border-left: none;
+}
+
+img {
+	max-width: 100%;
+	max-height: 100%;
+}
+
+a {
+	text-decoration: none;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+
+a:focus,
+input:focus,
+select:focus,
+textarea:focus {
+	outline: 1px solid -webkit-focus-ring-color;
+	outline-offset: -1px;
+}
+
+hr {
+	border: 0;
+	height: 2px;
+	border-bottom: 2px solid;
+}
+
+h1 {
+	padding-bottom: 0.3em;
+	line-height: 1.2;
+	border-bottom-width: 1px;
+	border-bottom-style: solid;
+}
+
+h1, h2, h3 {
+	font-weight: normal;
+}
+
+table {
+	border-collapse: collapse;
+}
+
+table > thead > tr > th {
+	text-align: left;
+	border-bottom: 1px solid;
+}
+
+table > thead > tr > th,
+table > thead > tr > td,
+table > tbody > tr > th,
+table > tbody > tr > td {
+	padding: 5px 10px;
+}
+
+table > tbody > tr + tr > td {
+	border-top: 1px solid;
+}
+
+blockquote {
+	margin: 0 7px 0 5px;
+	padding: 0 16px 0 10px;
+	border-left-width: 5px;
+	border-left-style: solid;
+}
+
+code {
+	font-family: Menlo, Monaco, Consolas, "Droid Sans Mono", "Courier New", monospace, "Droid Sans Fallback";
+	font-size: 1em;
+	line-height: 1.357em;
+}
+
+body.wordWrap pre {
+	white-space: pre-wrap;
+}
+
+pre:not(.hljs),
+pre.hljs code > div {
+	padding: 16px;
+	border-radius: 3px;
+	overflow: auto;
+}
+
+pre code {
+	color: var(--vscode-editor-foreground);
+	tab-size: 4;
+}
+
+/** Theming */
+
+.vscode-light pre {
+	background-color: rgba(220, 220, 220, 0.4);
+}
+
+.vscode-dark pre {
+	background-color: rgba(10, 10, 10, 0.4);
+}
+
+.vscode-high-contrast pre {
+	background-color: rgb(0, 0, 0);
+}
+
+.vscode-high-contrast h1 {
+	border-color: rgb(0, 0, 0);
+}
+
+.vscode-light table > thead > tr > th {
+	border-color: rgba(0, 0, 0, 0.69);
+}
+
+.vscode-dark table > thead > tr > th {
+	border-color: rgba(255, 255, 255, 0.69);
+}
+
+.vscode-light h1,
+.vscode-light hr,
+.vscode-light table > tbody > tr + tr > td {
+	border-color: rgba(0, 0, 0, 0.18);
+}
+
+.vscode-dark h1,
+.vscode-dark hr,
+.vscode-dark table > tbody > tr + tr > td {
+	border-color: rgba(255, 255, 255, 0.18);
+}
+
+</style>
+
+<style>
+/* Tomorrow Theme */
+/* http://jmblog.github.com/color-themes-for-google-code-highlightjs */
+/* Original theme - https://github.com/chriskempson/tomorrow-theme */
+
+/* Tomorrow Comment */
+.hljs-comment,
+.hljs-quote {
+	color: #8e908c;
+}
+
+/* Tomorrow Red */
+.hljs-variable,
+.hljs-template-variable,
+.hljs-tag,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-regexp,
+.hljs-deletion {
+	color: #c82829;
+}
+
+/* Tomorrow Orange */
+.hljs-number,
+.hljs-built_in,
+.hljs-builtin-name,
+.hljs-literal,
+.hljs-type,
+.hljs-params,
+.hljs-meta,
+.hljs-link {
+	color: #f5871f;
+}
+
+/* Tomorrow Yellow */
+.hljs-attribute {
+	color: #eab700;
+}
+
+/* Tomorrow Green */
+.hljs-string,
+.hljs-symbol,
+.hljs-bullet,
+.hljs-addition {
+	color: #718c00;
+}
+
+/* Tomorrow Blue */
+.hljs-title,
+.hljs-section {
+	color: #4271ae;
+}
+
+/* Tomorrow Purple */
+.hljs-keyword,
+.hljs-selector-tag {
+	color: #8959a8;
+}
+
+.hljs {
+	display: block;
+	overflow-x: auto;
+	color: #4d4d4c;
+	padding: 0.5em;
+}
+
+.hljs-emphasis {
+	font-style: italic;
+}
+
+.hljs-strong {
+	font-weight: bold;
+}
+</style>
+
+<style>
+/*
+ * Markdown PDF CSS
+ */
+
+ body {
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", "Ubuntu", "Droid Sans", sans-serif, "Meiryo";
+	padding: 0 12px;
+}
+
+pre {
+	background-color: #f8f8f8;
+	border: 1px solid #cccccc;
+	border-radius: 3px;
+	overflow-x: auto;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+}
+
+pre:not(.hljs) {
+	padding: 23px;
+	line-height: 19px;
+}
+
+blockquote {
+	background: rgba(127, 127, 127, 0.1);
+	border-color: rgba(0, 122, 204, 0.5);
+}
+
+.emoji {
+	height: 1.4em;
+}
+
+code {
+	font-size: 14px;
+	line-height: 19px;
+}
+
+/* for inline code */
+:not(pre):not(.hljs) > code {
+	color: #C9AE75; /* Change the old color so it seems less like an error */
+	font-size: inherit;
+}
+
+/* Page Break : use <div class="page"/> to insert page break
+-------------------------------------------------------- */
+.page {
+	page-break-after: always;
+}
+
+</style>
+
+<script src="https://unpkg.com/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <script>
+    mermaid.initialize({
+      startOnLoad: true,
+      theme: document.body.classList.contains('vscode-dark') || document.body.classList.contains('vscode-high-contrast')
+          ? 'dark'
+          : 'default'
+    });
+  </script>
+<h1 id="hmin318m-imagerie-m%C3%A9dicale-et-3d">HMIN318M Imagerie Médicale et 3D</h1>
+<p><em>Noé Masse, 27/09/2020</em></p>
+<h2 id="segmentation">Segmentation</h2>
+<p>Notre objectif va être d'implémenter un algorithme de segmentation appelé <em>Bridge Burner</em>, proposé par <em>A. Mikheev, H. Rusinek et R. Grossman</em>.</p>
+<p>Le principe est le suivant :</p>
+<ul>
+<li>Binariser l'image</li>
+<li>Eroder l'image avec plusieurs passes</li>
+<li>Dilater l'image sur les pixels érodé</li>
+</ul>
+<p>Cela est similaire à l'opérateur <em>Opening</em>, qui est définit comme la dilatation d'une érosion. Cet opérateur a la propriété d'enlever les connections <em>(bridges)</em> entres ilôts.</p>
+<p>Pour plus d'information sur les opérateurs morphologique, voir :<br>
+<em>&quot;Image analysis using mathematical morphology&quot;, R. M. Haralick, S. R. Sternberg, and X. Zhuang, IEEE</em></p>
+<p>Vous pouvez aussi jeter un oeil à un travail similaire réalisé sur des <a href="https://noe.masse.pro/files/Fingerprint-Presentation.pdf">empreintes digitales 🔗</a> (Slide 21).</p>
+<h2 id="analyse-dun-cerveau">Analyse d'un cerveau</h2>
+<p>On possède l'acquisition d'un cerveau, et on utilise <a href="https://fiji.sc/">Fiji 🔗</a> afin de l'analyser.</p>
+<table>
+<thead>
+<tr>
+<th>Original</th>
+<th>Binarized (Otsu)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="img/coronal_300.png" width="200"></td>
+<td><img src="img/coronal_binarized.png" width="200"></td>
+</tr>
+</tbody>
+</table>
+<table>
+<thead>
+<tr>
+<th>Histogramme</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="img/coronal_histogramme.png" width="200"></td>
+</tr>
+</tbody>
+</table>
+<h3 id="seuillage">Seuillage</h3>
+<p>Afin de binariser l'image, on utilise la <a href="https://fr.wikipedia.org/wiki/M%C3%A9thode_d%27Otsu">Méthode d'Otsu 🔗</a>.<br>
+Celle ci nous deux classes de manière à minimiser les variances.<br>
+Pour l'image 3D Coronal, on obtient un seuil de <strong>36</strong>.</p>
+<p>Cependant, cela ne suffit pas, en effet, si on observe bien, on peut voir des connections entre les différentes parties.</p>
+<img src="img/coronal_bridges.png" width="300">
+<p>C'est là qu'intervient l'algorithme <em>Bridge Burner</em>.</p>
+<h2 id="impl%C3%A9mentation">Implémentation</h2>
+<p>Une première version est très rapide à implémenter.<br>
+On choisi une taille de masque uniforme de 2x2x2, on prend le plus petit possible, car on préférera ici jouer sur le nombre d'opération successives.</p>
+<pre class="hljs"><code><div>CImg&lt;<span class="hljs-keyword">unsigned</span> short&gt; binarizedImg = img.get_threshold(threshold);
+
+<span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; erodeCount; i++)
+{
+    binarizedImg.erode(<span class="hljs-number">2</span>);
+}
+
+<span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; dilateCount; i++)
+{
+    binarizedImg.dilate(<span class="hljs-number">2</span>);
+}
+</div></code></pre>
+<p>Avec les paramètres suivants</p>
+<table>
+<thead>
+<tr>
+<th>threshold</th>
+<th>erodeCount</th>
+<th>dilateCount</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>36</td>
+<td>3</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+<p>On obtient le résultat suivant:</p>
+<img src="img/coronal_bridged.png" width="400">
+<h2 id="seuillage-automatique">Seuillage Automatique</h2>
+<p>Pour le seuil de binarisation, on utilisera quasiment systématiquement la méthode d'Otsu.</p>
+<p><em>Le code est adapté de mon ancien travail cité précédemment : <a href="https://gitlab.com/carlosbb/fingerprint/-/blob/develop/src/img/morph/filters/binarizer.cpp">binarizer.cpp (gitlab.com) 🔗</a></em></p>
+<pre class="hljs"><code><div><span class="hljs-function"><span class="hljs-keyword">unsigned</span> short <span class="hljs-title">GetOtsuThreshold</span><span class="hljs-params">(<span class="hljs-keyword">const</span> CImg&lt;<span class="hljs-keyword">unsigned</span> short&gt; &amp;img)</span>
+</span>{
+    <span class="hljs-comment">// Calculate the threshold using the method:</span>
+    <span class="hljs-comment">// A threshold selection method from gray-level histograms,</span>
+    <span class="hljs-comment">// N. Otsu, 1975, Automatica</span>
+
+    <span class="hljs-keyword">double</span> mean   = <span class="hljs-number">0.0</span>;
+    <span class="hljs-keyword">double</span> expect = <span class="hljs-number">0.0</span>; <span class="hljs-comment">// mu</span>
+    <span class="hljs-keyword">double</span> cumul  = <span class="hljs-number">0.0</span>; <span class="hljs-comment">// omega</span>
+    <span class="hljs-keyword">double</span> maxVar = <span class="hljs-number">0.0</span>; <span class="hljs-comment">// sigma_B</span>
+
+    <span class="hljs-comment">// C6262: Use the heap, too much data for the stack</span>
+    <span class="hljs-function"><span class="hljs-built_in">std</span>::<span class="hljs-built_in">vector</span>&lt;<span class="hljs-keyword">double</span>&gt; <span class="hljs-title">hist</span><span class="hljs-params">(USHRT_MAX, <span class="hljs-number">0.0F</span>)</span></span>;
+
+    <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">int</span> voxelCount = img.<span class="hljs-built_in">size</span>();
+    <span class="hljs-keyword">unsigned</span> short threshold = <span class="hljs-number">0</span>;
+
+    <span class="hljs-comment">// ==== Compute hist ====</span>
+    cimg_for(img, ptr, <span class="hljs-keyword">unsigned</span> short)
+    {
+        hist[*ptr]++;
+    }
+
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; USHRT_MAX; i++) {
+        hist[i] /= voxelCount;
+        mean += i * hist[i];
+    }
+
+    <span class="hljs-comment">// ==== Threshold ====</span>
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; USHRT_MAX; i++) {
+        cumul += hist[i];
+        expect += i * hist[i];
+
+        <span class="hljs-keyword">if</span> (cumul &gt;= <span class="hljs-number">1.0</span>) <span class="hljs-keyword">break</span>;
+
+        <span class="hljs-keyword">double</span> var = <span class="hljs-built_in">std</span>::<span class="hljs-built_in">pow</span>(mean * cumul - expect, <span class="hljs-number">2</span>) / (cumul * (<span class="hljs-number">1</span> - cumul));
+
+        <span class="hljs-keyword">if</span> (var &gt;= maxVar) {
+            threshold = i;
+            maxVar = var;
+        }
+    }
+
+    <span class="hljs-keyword">return</span> threshold;
+}
+</div></code></pre>
+<h2 id="r%C3%A9sultats">Résultats</h2>
+<p>On obtient des résultats plutôt bon sur l'image <em>brainseg</em>, un peu moins bon sur l'image <em>Coronal</em>.</p>
+<h3 id="coronal">Coronal</h3>
+<table>
+<thead>
+<tr>
+<th>Segmentée</th>
+<th>Masque</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="img/result_coronal.png" width="200"></td>
+<td><img src="img/result_coronal_mask.png" width="200"></td>
+</tr>
+</tbody>
+</table>
+<h3 id="brainseg">Brainseg</h3>
+<table>
+<thead>
+<tr>
+<th>Segmentée</th>
+<th>Masque</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><img src="img/result_brainseg.png" width="200"></td>
+<td><img src="img/result_brainseg_mask.png" width="200"></td>
+</tr>
+</tbody>
+</table>
+<h2 id="pistes-de-r%C3%A9flexion">Pistes de réflexion</h2>
+<p>Il serait intéressant de se pencher sur les opérateurs morphologiques généralisés (non binaire),
+proposé par <em>Haralick, Sternberg</em> et <em>Zhuang</em>.
+Une idée que j'aurais pour éliminer les <em>bridges</em>, serait de calculer une <em>Distance Transform</em>, et la binariser avec un seuil choisi, et ensuite dilater l'image.</p>
+<h1 id="annexe">Annexe</h1>
+<h3 id="tp2cpp">TP2.cpp</h3>
+<pre class="hljs"><code><div><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;iostream&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;cmath&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;vector&gt;</span></span>
+
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">"CImg.h"</span></span>
+
+<span class="hljs-keyword">using</span> <span class="hljs-keyword">namespace</span> cimg_library;
+
+<span class="hljs-function"><span class="hljs-keyword">unsigned</span> short <span class="hljs-title">GetOtsuThreshold</span><span class="hljs-params">(<span class="hljs-keyword">const</span> CImg&lt;<span class="hljs-keyword">unsigned</span> short&gt; &amp;img)</span>
+</span>{
+    <span class="hljs-comment">// Calculate the threshold using the method:</span>
+    <span class="hljs-comment">// A threshold selection method from gray-level histograms,</span>
+    <span class="hljs-comment">// N. Otsu, 1975, Automatica</span>
+
+    <span class="hljs-keyword">double</span> mean   = <span class="hljs-number">0.0</span>;
+    <span class="hljs-keyword">double</span> expect = <span class="hljs-number">0.0</span>; <span class="hljs-comment">// mu</span>
+    <span class="hljs-keyword">double</span> cumul  = <span class="hljs-number">0.0</span>; <span class="hljs-comment">// omega</span>
+    <span class="hljs-keyword">double</span> maxVar = <span class="hljs-number">0.0</span>; <span class="hljs-comment">// sigma_B</span>
+
+    <span class="hljs-comment">// C6262: Use the heap, too much data for the stack</span>
+    <span class="hljs-function"><span class="hljs-built_in">std</span>::<span class="hljs-built_in">vector</span>&lt;<span class="hljs-keyword">double</span>&gt; <span class="hljs-title">hist</span><span class="hljs-params">(USHRT_MAX, <span class="hljs-number">0.0F</span>)</span></span>;
+
+    <span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">int</span> voxelCount = img.<span class="hljs-built_in">size</span>();
+    <span class="hljs-keyword">unsigned</span> short threshold = <span class="hljs-number">0</span>;
+
+    <span class="hljs-comment">// ==== Compute hist ====</span>
+    cimg_for(img, ptr, <span class="hljs-keyword">unsigned</span> short)
+    {
+        hist[*ptr]++;
+    }
+
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; USHRT_MAX; i++) {
+        hist[i] /= voxelCount;
+        mean += i * hist[i];
+    }
+
+    <span class="hljs-comment">// ==== Threshold ====</span>
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; USHRT_MAX; i++) {
+        cumul += hist[i];
+        expect += i * hist[i];
+
+        <span class="hljs-keyword">if</span> (cumul &gt;= <span class="hljs-number">1.0</span>) <span class="hljs-keyword">break</span>;
+
+        <span class="hljs-keyword">double</span> var = <span class="hljs-built_in">std</span>::<span class="hljs-built_in">pow</span>(mean * cumul - expect, <span class="hljs-number">2</span>) / (cumul * (<span class="hljs-number">1</span> - cumul));
+
+        <span class="hljs-keyword">if</span> (var &gt;= maxVar) {
+            threshold = i;
+            maxVar = var;
+        }
+    }
+
+    <span class="hljs-keyword">return</span> threshold;
+}
+
+
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">(<span class="hljs-keyword">int</span> argc, <span class="hljs-keyword">char</span>** argv)</span>
+</span>{
+	<span class="hljs-keyword">if</span> (argc &lt; <span class="hljs-number">4</span>)
+	{
+		<span class="hljs-built_in">std</span>::<span class="hljs-built_in">cerr</span> &lt;&lt; <span class="hljs-string">"Usage: &lt;erodeCount&gt; &lt;dilateCount&gt;"</span> &lt;&lt; <span class="hljs-built_in">std</span>::<span class="hljs-built_in">endl</span>;
+		<span class="hljs-keyword">return</span> EXIT_FAILURE;
+	}
+
+	<span class="hljs-comment">// Load Img</span>
+	CImg&lt;<span class="hljs-keyword">unsigned</span> short&gt; img;
+	<span class="hljs-keyword">float</span> voxelsize[<span class="hljs-number">3</span>];
+	img.load_analyze(argv[<span class="hljs-number">1</span>], voxelsize);
+	<span class="hljs-keyword">int</span> dim[] = { img.<span class="hljs-built_in">width</span>(), img.<span class="hljs-built_in">height</span>(), img.depth() };
+
+    <span class="hljs-keyword">unsigned</span> short threshold = GetOtsuThreshold(img);
+	<span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">int</span> erodeCount = atoi(argv[<span class="hljs-number">2</span>]);
+	<span class="hljs-keyword">unsigned</span> <span class="hljs-keyword">int</span> dilateCount = atoi(argv[<span class="hljs-number">3</span>]);
+
+	CImg&lt;<span class="hljs-keyword">unsigned</span> short&gt; binarizedImg = img.get_threshold(threshold);
+
+	<span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; erodeCount; i++)
+	{
+		binarizedImg.erode(<span class="hljs-number">2</span>);
+	}
+
+	<span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i &lt; dilateCount; i++)
+	{
+		binarizedImg.dilate(<span class="hljs-number">2</span>);
+	}
+
+	binarizedImg.<span class="hljs-built_in">display</span>(<span class="hljs-string">"Binarized"</span>);
+
+	<span class="hljs-keyword">return</span> EXIT_SUCCESS;
+}
+</div></code></pre>
+
+</body>
+</html>
