@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>HMIN317 Moteur de Jeux - Étude Documentaire</title>
+        <style>
+</style>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item { list-style-type: none; } .task-list-item-checkbox { margin-left: -20px; vertical-align: middle; }
+</style>
+        
+        
+        
+    </head>
+    <body class="vscode-light">
+        <h1 id="hmin317-moteur-de-jeux---étude-documentaire">HMIN317 Moteur de Jeux - Étude Documentaire</h1>
+<h1 id="bytecode-et-scripting--pattern-implémentations-et-solutions">Bytecode et Scripting : Pattern, implémentations et solutions</h1>
+<h2 id="gameplay--comportement">Gameplay &amp; Comportement</h2>
+<p>Lors du développement d'un jeu, nous avons besoin d'y intégrer des éléments narratifs, de gameplay.
+Un jeu est analogue à un film ou une scène de théâtre, on possède une scène, des acteurs, et ceux si intéragissent pour former l'environnement dans lequel est plongé le joueur.</p>
+<p>Une partie du développement y est donc consacrée, on pense souvent au Gameplay Programming, mais c'est un peu plus large que cela.
+On va parler plus généralement de Behavioral Programming.</p>
+<p><a href="http://www.wisdom.weizmann.ac.il/~bprogram/more.html">Behavioral Programming 🔗</a></p>
+<p>Dans un jeu, il existe une énorme quantité d'acteurs : items, quêtes, monstres, PNJs, <em>Portes</em>...
+Nous faison face à deux problèmes majeurs ici:</p>
+<h4 id="rapidité-et-facilité-de-développement">Rapidité et Facilité de Développement</h4>
+<blockquote>
+<p>Au vu de la quantité énorme de comportements à développer, il est impératif d'être rapide à développer ceux ci.<br>
+Les codebases de jeux sont aussi très complexes et très volumineuses, il est donc nécessaire de trouver un moyen de simplifier le développement.</p>
+</blockquote>
+<h4 id="maintenabilité">Maintenabilité</h4>
+<blockquote>
+<p>Qui parle d'un très grand nombre de comportements à produire, parle aussi de maintenabilité du code.
+Les interactions entre comportements peuvent très vite dégénérées, une bonne gestion des ressources doit impérativement être faite.</p>
+</blockquote>
+<p>Cependant, le développement de tels comportements, pour la majorité, n'est que très peu demandant en ressources, et on peut très facilement réduire la précision de ceux-cis.<br>
+Nous avons donc les critères suivants :</p>
+<ul>
+<li>Besoin d'un développement rapide</li>
+<li>Besoin d'une certaine sûreté</li>
+<li>Non besoin de puissance de calcul très élevée</li>
+</ul>
+<p>Pour répondre à ces critères, il existe plusieurs solutions, nous allons ici nous intéresser au paradigme du <strong>Scripting</strong>, et au pattern <strong>Bytecode</strong>.</p>
+<p><em>Note : ces critères diffèrent selon les besoins, c'est pour cela qu'il n'existe pas de solution universelle au scripting, nous allons voir ça par la suite</em></p>
+<h2 id="scripting">Scripting</h2>
+<h4 id="définition">Définition</h4>
+<blockquote>
+<p>En informatique, un script désigne un programme (ou un bout de programme) chargé d'exécuter une action pré-définie quand un utilisateur réalise une action. Il s'agit d'une suite de commandes simples et souvent peu structurées qui permettent l'automatisation de certaines tâches successives dans un ordre donné.</p>
+</blockquote>
+<p><em>Source : <a href="https://www.journaldunet.fr/web-tech/dictionnaire-du-webmastering/1203599-script-definition/">Journal du net 🔗</a></em></p>
+<p>Dans le cadre des jeux, l'idée est de penser un script comme un <strong>Asset</strong>, au même titre qu'un modèle 3D, une texture ou un son.</p>
+<p>Ce paradigme nous permet d'avoir une bonne maintenabilité, les scripts étant des composants indépendants pouvant être ajotué ou enlevé à la volée.</p>
+<h3 id="langages-de-scripting">Langages de Scripting</h3>
+<p>Plusieurs langages de scripting existent, comme le <em>Bash</em>, le <em>Ruby</em>, ou le <em>Javascript</em>.</p>
+<h2 id="interpretation-et-compilation">Interpretation et Compilation</h2>
+<p>Il existe plusieurs manières d'implémenter le paradigme du scripting.</p>
+<p><strong>Interpretation</strong> Méthode simple à mettre en place, mais coûteuse.<br>
+<strong>Compilation</strong> Apporte de bonnes performances, mais est très  difficile à mettre en place et réduit la productivité.</p>
+<p>De nos jours, il n'existe que très peu de langages directement interpretés dans les jeux, car le coût en performance est très important.<br>
+Souvent, ce sont des langages custom, comme par exemple pour un système de dialogue.</p>
+<p>La compilation peut se présenter sous plusieurs formes :<br>
+<strong>Compilation Classique (Statique ou Dynamique)</strong> Le code est compilé en amont<br>
+<strong>Compilation Just-in-time (JIT)</strong> Le code est compilé en temps réel.</p>
+<p>Le <em>JavaScript</em> par exemple, est compilé en temps réel si on utilise le moteur <em>V8</em> de <em>Google</em>.</p>
+<h2 id="bytecode">Bytecode</h2>
+<p>L'interpretation et la compilations possèdent tous deux avantages et inconvénients.<br>
+L'interpretation est très lente là où la compilation est moins portable, plus complexe et plus lourde à mettre en place.</p>
+<p>Pour obtenir le meilleur des deux mondes, il existe un Pattern : le <strong>Bytecode</strong>.</p>
+<p>Le principe est de définir un jeu d'instructions, compiler un programme pour ce jeu d'instruction et l'interprêter.
+Le programme compilé est appelé <em>bytecode</em>.</p>
+<p>Ainsi, toutes les instructions sont simples, réduisant l'overhead de l'interpretation pour un très bon gain de performance, et nous obtenons la modularité nécessaire, ce qui permet par exemple de faire du <em>Live Scripting</em>.</p>
+<h4 id="avantages-du-bytecode">Avantages du bytecode</h4>
+<ul>
+<li><em>Dense et contigü.</em> Optimisation de la mémoire</li>
+<li><em>Linéaire.</em> Utilisation de la stack possible, on évite au maximum les memory jumps.</li>
+<li><em>Rapide</em>. Très peu d'overhead, les instructions sont très simples.</li>
+</ul>
+<h4 id="désavantages">Désavantages</h4>
+<ul>
+<li>Nécessite énormément d'outils (Debugger, Linter, Profiler etc...)</li>
+</ul>
+<h2 id="quelques-solutions-existantes">Quelques solutions existantes</h2>
+<h3 id="lua">LUA</h3>
+<p><strong>Langage</strong> Lua<br>
+<strong>Lien</strong>  <a href="https://www.lua.org/">lua 🔗</a></p>
+<p>Très utilisé dans l'indsutrie, solution très facile à mettre en place avec beaucoup d'outils existants.</p>
+<h3 id="mono">Mono</h3>
+<p><strong>Langages</strong> C#, F#, Java, Python, Javascript etc...<br>
+<strong>Lien</strong> <a href="https://www.mono-project.com/">mono-project 🔗</a></p>
+<p>Utilisé par Unity utilisant le C#, très puissant, mais difficile à mettre en place et nécessite une license pour embarquer mono.</p>
+<h3 id="v8-javascript">V8 Javascript</h3>
+<p><strong>Langage</strong> Javascript<br>
+<strong>Lien</strong> <a href="https://v8.dev/">v8 🔗</a></p>
+<p>Très puissant, propose de la compilation JIT, mais possède une grosse codebase, et pas très bien documenté pour les néophytes.</p>
+
+    </body>
+    </html>

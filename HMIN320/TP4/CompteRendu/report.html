@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>HMIN320</title>
+        <style>
+</style>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item { list-style-type: none; } .task-list-item-checkbox { margin-left: -20px; vertical-align: middle; }
+</style>
+        
+        
+        
+    </head>
+    <body class="vscode-light">
+        <h1 id="hmin320">HMIN320</h1>
+<h2 id="création-dune-application-xr-avec-cardboard-sdk">Création d'une application XR avec Cardboard SDK</h2>
+<p><a href="https://developers.google.com/cardboard">https://developers.google.com/cardboard</a></p>
+<h3 id="installation">Installation</h3>
+<p>On utilise le <strong>Package Manager</strong> d'Unity afin d'installer le <em>Cardboard XR Plugin</em>.<br>
+On ajoute le package git : <code>https://github.com/googlevr/cardboard-xr-plugin.git</code></p>
+<img src="img\package_git.png" width="800">
+<p>On importe ensuite le Hello Cardboard depuis le package.</p>
+<img src="img\package_xr.png" width="800">
+<p>Celui ci se trouve à l'emplacement<br>
+<code>Assets/Samples/Google Cardboard XR Plugin for Unity/1.3.0/Hello Cardboard</code></p>
+<h3 id="configuration-du-projet">Configuration du projet</h3>
+<p>On passe sur la plateforme de développement <strong>Android</strong>.</p>
+<p><strong>File &gt; Build Settings &gt; Android &gt; Switch Platform</strong></p>
+<p>Puis on configure le projet comme indiqué sur le guide de google.</p>
+<p><a href="https://developers.google.com/cardboard/develop/unity/quickstart">https://developers.google.com/cardboard/develop/unity/quickstart</a></p>
+<h3 id="modification-de-la-scène">Modification de la scène</h3>
+<p>On attache un script <code>CameraPointer</code> sur notre caméra.</p>
+<p><em>Note : Ce script est adapté d'un exemple fourni par Google, mais nous
+permet de comprendre le fonctionnement.</em></p>
+<h4 id="camerapointercs">CameraPointer.cs</h4>
+<pre><code class="language-CSharp"><div><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title">CameraPointer</span> : <span class="hljs-title">MonoBehaviour</span>
+{
+    <span class="hljs-keyword">private</span> <span class="hljs-keyword">const</span> <span class="hljs-keyword">float</span> _maxDistance = <span class="hljs-number">10</span>;
+    <span class="hljs-keyword">private</span> GameObject _pointedObject = <span class="hljs-literal">null</span>;
+
+    <span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">Update</span>(<span class="hljs-params"></span>)</span>
+    {
+        <span class="hljs-comment">// Casts ray towards camera's forward direction, to detect if a GameObject is being pointed</span>
+        <span class="hljs-comment">// at.</span>
+        RaycastHit hit;
+        <span class="hljs-keyword">if</span> (Physics.Raycast(transform.position, transform.forward, <span class="hljs-keyword">out</span> hit, _maxDistance))
+        {
+            <span class="hljs-comment">// GameObject detected in front of the camera.</span>
+            <span class="hljs-keyword">if</span> (_pointedObject != hit.transform.gameObject)
+            {
+                _pointedObject?.SendMessage(<span class="hljs-string">"OnPointerExit"</span>);
+                _pointedObject = hit.transform.gameObject;
+                _pointedObject.SendMessage(<span class="hljs-string">"OnPointerEnter"</span>);
+            }
+        }
+        <span class="hljs-keyword">else</span>
+        {
+            <span class="hljs-comment">// No GameObject detected in front of the camera.</span>
+            _pointedObject?.SendMessage(<span class="hljs-string">"OnPointerExit"</span>);
+            _pointedObject = <span class="hljs-literal">null</span>;
+        }
+
+        <span class="hljs-comment">// Checks for screen touches.</span>
+        <span class="hljs-keyword">if</span> (Google.XR.Cardboard.Api.IsTriggerPressed)
+        {
+            _pointedObject?.SendMessage(<span class="hljs-string">"OnPointerClick"</span>);
+        }
+    }
+}
+</div></code></pre>
+<p>Et on ajoute une interaction simple.</p>
+<h3 id="objectcontrollercs">ObjectController.cs</h3>
+<pre><code class="language-CSharp"><div><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">OnPointerEnter</span>(<span class="hljs-params"></span>)</span>
+{
+    SetMaterial(<span class="hljs-literal">true</span>);
+}
+
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">OnPointerExit</span>(<span class="hljs-params"></span>)</span>
+{
+    SetMaterial(<span class="hljs-literal">false</span>);
+}
+
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">OnPointerClick</span>(<span class="hljs-params"></span>)</span>
+{
+    TeleportRandomly();
+}
+
+<span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">SetMaterial</span>(<span class="hljs-params"><span class="hljs-keyword">bool</span> isPointed</span>)</span>
+{
+    <span class="hljs-keyword">if</span> (InactiveMaterial != <span class="hljs-literal">null</span> &amp;&amp; PointedMaterial != <span class="hljs-literal">null</span>)
+    {
+        _myRenderer.material = isPointed ? PointedMaterial : InactiveMaterial;
+    }
+}
+</div></code></pre>
+<p>Finalement, pour aider à la visée, on ajoute un viseur en UI.<br>
+Le viseur provient du pack d'assets <strong>Crosshairs - <a href="http://Kenney.nl">Kenney.nl</a></strong></p>
+<img src="img\kenney_crosshair.png" width="800">  
+<br>
+<img src="img\pointer.png" width="800">
+<h3 id="résultat">Résultat</h3>
+<img src="img\screenshot.jpg" width="800">
+<h2 id="création-dune-application-ar-avec-vuforia">Création d'une application AR avec Vuforia</h2>
+<p>On a suivi le tutoriel de Vuforia.
+J'ai décidé d'ajouter des FX pour la deuxième image, au lieu d'une animation.</p>
+<h3 id="résultats">Résultats</h3>
+<img src="img\trump.png" width="800">  
+<br>
+<img src="img\explosion.png" width="800">
+    </body>
+    </html>

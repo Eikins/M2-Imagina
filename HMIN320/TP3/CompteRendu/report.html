@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <title>HMIN320 Vision, réalités virtuelle et augmentée</title>
+        <style>
+</style>
+        
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/markdown.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/Microsoft/vscode/extensions/markdown-language-features/media/highlight.css">
+<style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', system-ui, 'Ubuntu', 'Droid Sans', sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+            }
+        </style>
+        <style>
+.task-list-item { list-style-type: none; } .task-list-item-checkbox { margin-left: -20px; vertical-align: middle; }
+</style>
+        
+        
+        
+    </head>
+    <body class="vscode-light">
+        <h1 id="hmin320-vision-réalités-virtuelle-et-augmentée">HMIN320 Vision, réalités virtuelle et augmentée</h1>
+<p>On reprend la suite du TP1, et on y apporte quelques améliorations.</p>
+<h2 id="création-dun-niveau-simple">Création d'un niveau simple</h2>
+<p>On utilise probuilder afin de créer un niveau de plateforme à terminer</p>
+<img src="img\level.png" width="800">
+<h2 id="caméra">Caméra</h2>
+<p>Pour permettre au joueur de découvrir son environnement, on lui donne un meilleur contrôle sur la caméra à l'aides des <em>Flèches Directionnelles</em>.
+On utilise la package <strong>Cinémachine</strong> pour la gestion des caméras.</p>
+<p>On sépare notre joueur en deux objets : une cible pour la caméra et le corps du joueur.</p>
+<img src="img\camera.png" width="800">
+<p>On attache ensuite notre <em>Follow Target</em> à notre caméra virtuelle, et on utilise le mode <em>3rd Person Follow</em>.</p>
+<h4 id="playercontrollercs">PlayerController.cs</h4>
+<pre><code class="language-CSharp"><div><span class="hljs-comment">// Input Event</span>
+<span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">OnLookAround</span>(<span class="hljs-params">InputAction.CallbackContext ctx</span>)</span>
+{
+    _inputLookVector = ctx.ReadValue&lt;Vector2&gt;();
+}
+
+<span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">LookAround</span>(<span class="hljs-params"></span>)</span>
+{
+    <span class="hljs-keyword">if</span> (_followTransform != <span class="hljs-literal">null</span>)
+    {
+        _followTransform.rotation *= Quaternion.AngleAxis(_inputLookVector.x * _lookRotationSpeed.x * Time.fixedDeltaTime, Vector3.up);
+        _followTransform.rotation *= Quaternion.AngleAxis(_inputLookVector.y * _lookRotationSpeed.y * Time.fixedDeltaTime, Vector3.right);
+
+        ResetRollAndClampCameraAngles();
+
+        <span class="hljs-comment">// When the player moves, align him with the camera angle</span>
+        <span class="hljs-keyword">if</span> (_localSpeed.x != <span class="hljs-number">0.0f</span> || _localSpeed.z != <span class="hljs-number">0.0f</span>)
+        {
+            transform.rotation = Quaternion.Euler(<span class="hljs-number">0.0f</span>, _followTransform.eulerAngles.y, <span class="hljs-number">0.0f</span>);
+            _followTransform.localEulerAngles = <span class="hljs-keyword">new</span> Vector3(angles.x, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>);
+        }
+    }
+}
+</div></code></pre>
+<p>On peu ainsi déplacer librement la caméra autour du joueur.<br>
+<img src="img\camera_view.png" width="800"></p>
+<h3 id="visée">Visée</h3>
+<p>En préparation d'un éventuel système de visée, on crée une deuxième caméra virtuelle placée au niveau de l'épaule du joueur, et on créer une transition lors du maintiens de la touche de visée ajoutée à l'<em>ActionMap</em> : <code>[Left Shift]</code></p>
+<h4 id="playercontrollercs-1">PlayerController.cs</h4>
+<pre><code class="language-CSharp"><div><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">OnAim</span>(<span class="hljs-params">InputAction.CallbackContext ctx</span>)</span>
+{
+    <span class="hljs-keyword">if</span> (ctx.started)
+    {
+        _mainCamera.SetActive(<span class="hljs-literal">false</span>);
+        _aimCamera.SetActive(<span class="hljs-literal">true</span>);
+    }
+    <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (ctx.canceled)
+    {
+        _mainCamera.SetActive(<span class="hljs-literal">true</span>);
+        _aimCamera.SetActive(<span class="hljs-literal">false</span>);
+    }
+}
+</div></code></pre>
+<img src="img\camera_aim.gif" width="800">
+<h2 id="amélioration-du-saut">Amélioration du Saut</h2>
+<p>Dans un premier temps, nous ajoutons les animations de saut.</p>
+<img src="img\jump_anim.png" width="800">
+<p>Ensuite, nous allons revoir la physique du saut.
+En effet, actuellement le saut forme une parabole car nous utilisons les lois de la physique classique, cependant, ce n'est pas le plus agréable à manier pour un joueur.<br>
+Une conférence GDC a été donnée sur ce sujet et est très intéressante.</p>
+<img src="img\jump.png" width="800">
+<h4 id="playercontrollercs-2">PlayerController.cs</h4>
+<pre><code class="language-CSharp"><div>_localSpeed.y -= g * dt * (_localSpeed.y &lt; <span class="hljs-number">0.0f</span> ? _fallMultiplier : <span class="hljs-number">1.0f</span>);
+</div></code></pre>
+<p><strong>GDC Reference</strong> <a href="http://www.mathforgameprogrammers.com/gdc2016/GDC2016_Pittman_Kyle_BuildingABetterJump.pdf">Building a better jump 🔗</a></p>
+<p>Enfin, on ajoute deux éléments supplémentaires:</p>
+<ul>
+<li>On limite la vitesse de chute, afin de simuler la résistance de l'air et avoir un meilleur contrôle de celles ci</li>
+<li>On ajoute un court délai (~0.1s) qui permet au joueur d'effectuer un saut même après être tombé d'une plateforme</li>
+</ul>
+<p>La deuxième solution permet d'éviter les situations frustrantes pour le joueur, où celui ci appuie un peu trop tard en bordure de plateforme et tombe dans le vide.</p>
+<p><strong>Limitation de la vitesse de chute</strong></p>
+<pre><code class="language-CSharp"><div>_localSpeed.y = Mathf.Max(_localSpeed.y, -_maximumFallSpeed);
+</div></code></pre>
+<p><strong>Délai pour le saut</strong></p>
+<pre><code class="language-CSharp"><div><span class="hljs-keyword">if</span> (!_Controller.isGrounded)
+{
+    _timeElapsedSinceLastGrounded += dt;
+}
+<span class="hljs-keyword">else</span>
+{
+    _timeElapsedSinceLastGrounded = <span class="hljs-number">0.0f</span>;
+}
+</div></code></pre>
+<pre><code class="language-CSharp"><div><span class="hljs-function"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title">OnJump</span>(<span class="hljs-params">InputAction.CallbackContext ctx</span>)</span>
+{
+    <span class="hljs-comment">// We can jump within a short delay after leaving the ground</span>
+    <span class="hljs-keyword">if</span> (ctx.started &amp;&amp; _timeElapsedSinceLastGrounded &lt; _jumpPermissiveExtraTime)
+    {
+        _localSpeed.y = _jumpForce;
+        _Animator.SetTrigger(<span class="hljs-string">"Jump"</span>);
+    }
+}
+</div></code></pre>
+<h2 id="cinématique-dintroduction">Cinématique d'introduction</h2>
+<p>On souhaite ajouter une cinématique d'introduction à notre jeu.
+Dans un premier temps, on créer une nouvelle <em>Caméra Virtuelle (Cinémachine)</em> et on créer un <em>Cinémachine Smooth Path</em>
+On ajoute le composant <em>Cinemachine Dolly Cart</em> à notre caméra virtuelle et on lui mets une vitesse de 10m/s.</p>
+<img src="img\intro_path.png" width="800">
+<p>Ensuite, on créer une timeline qui se déclenchera dès le début du niveau.
+On lui ajoute deux activations tracks : on active dans un premier temps notre caméra d'introduciton, pour on active ensuite celle du joueur.</p>
+<img src="img\timeline.png" width="800">
+<p>Et voilà ! On a une superbe cinématique de début de niveau ! Celle ci est très basique mais on peut l'approfondir avec l'outil Timeline en ajoutant divers effets.</p>
+<p><em>N'hésitez pas à tester le jeu pour voir la cinématique</em></p>
+<h2 id="ajouts-supplémentaires">Ajouts supplémentaires</h2>
+<p>Voici une liste de petits ajoûts supplémentaires:</p>
+<ul>
+<li>Correction d'un bug permettant d'obtenir plusieurs pièces d'un coup</li>
+<li>Ajoût des bruits de pas lorsque le joueur cours sur le sol</li>
+<li>Fixation de la vitesse lorsque le joueur est sur le sol, celle ci est calculée de sorte que le joueur puisse descendre les pentes sans accoups.</li>
+</ul>
+
+    </body>
+    </html>
