@@ -137,13 +137,34 @@ bool GMap::sew_dart(degree_t degree, id_t dart1, id_t dart2)
     if (degree == 1)
     {
         link_darts(1, dart1, dart2);
+        return true;
     }
     else
     {
+        idlist_t dart1Orbit;
+        idlist_t dart2Orbit;
+
         if (degree == 0)
         {
-            // TODO
+            dart1Orbit = orbit({ 2 }, dart1);
+            dart2Orbit = orbit({ 2 }, dart2);
         }
+        else if (degree == 2)
+        {
+            dart1Orbit = orbit({ 0 }, dart1);
+            dart2Orbit = orbit({ 0 }, dart2);
+        }
+
+        if (dart1Orbit.size() != dart2Orbit.size())
+        {
+            return false;
+        }
+
+        for (int i = 0; i < dart1Orbit.size(); i++)
+        {
+            link_darts(degree, dart1Orbit[i], dart2Orbit[i]);
+        }
+        return true;
     }
 }
 

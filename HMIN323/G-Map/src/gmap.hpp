@@ -224,10 +224,9 @@ public:
 
     static GMap3D square(float xsize = 5, float ysize = 5, float height = 0);
 
-    //static GMap3D cube(float xsize = 5, float ysize = 5, float zsize = 5);
+    static GMap3D cube(float xsize = 5, float ysize = 5, float zsize = 5);
 
-    //static GMap3D holeshape(float xsize = 5, float ysize = 5, float zsize = 5, float internalratio = 0.5);
-
+    static GMap3D holeshape(float xsize = 5, float ysize = 5, float zsize = 5, float internalratio = 0.5);
 
     std::vector<vec3_t> positions;
 

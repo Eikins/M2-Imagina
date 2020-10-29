@@ -40,18 +40,18 @@ GMap3D question3(){
     mgmap.print_alphas();
     return mgmap;
 }
-//
-//GMap3D question4a(){
-//    GMap3D mgmap = GMap3D::cube();
-//    mgmap.print_alphas();
-//    return mgmap;
-//}
-//
-//GMap3D question4b(){
-//    GMap3D mgmap = GMap3D::holeshape();
-//    mgmap.print_alphas();
-//    return mgmap;
-//}
+
+GMap3D question4a(){
+   GMap3D mgmap = GMap3D::cube();
+   mgmap.print_alphas();
+   return mgmap;
+}
+
+GMap3D question4b(){
+   GMap3D mgmap = GMap3D::holeshape();
+   mgmap.print_alphas();
+   return mgmap;
+}
 //
 //
 //void question5(){
@@ -81,6 +81,6 @@ GMap3D question3(){
 //}
 
 int main(){
-    question3();
+    question4a();
     return 0;
 }
