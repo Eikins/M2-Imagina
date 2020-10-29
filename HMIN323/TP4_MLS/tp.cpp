@@ -22,6 +22,8 @@
 #include <string>
 #include <cstdio>
 #include <cstdlib>
+#include <cmath>
+#include <functional>
 
 #include <algorithm>
 #include <GL/glut.h>
@@ -198,8 +200,6 @@ void init () {
     glEnable(GL_COLOR_MATERIAL);
 }
 
-
-
 void drawTriangleMesh( std::vector< Vec3 > const & i_positions , std::vector< unsigned int > const & i_triangles ) {
     glBegin(GL_TRIANGLES);
     for(unsigned int tIt = 0 ; tIt < i_triangles.size() / 3 ; ++tIt) {
@@ -334,32 +334,88 @@ void reshape(int w, int h) {
 void HPSS(Vec3 inputPoint, Vec3 &outputPoint, Vec3 &outputNormal, std::vector<Vec3> const &positions,
     std::vector<Vec3> const &normals, BasicANNkdTree const &kdtree, int kernel_type, float radius, 
     unsigned int nbIterations = 10, unsigned int knn = 20)
+{
+    const std::array<std::function<float(float, float)>, 3> kKernels = {
+        // Singular
+        [] (float r, float h) -> float {
+            return (h * h) / (r * r);
+        },
+        // Gaussian
+        [] (float r, float h)  -> float {
+            return std::exp(- (r * r) / (h * h));
+        },
+        // Wendland
+        [] (float r, float h)  -> float {
+            return std::pow(1.0f - r / h, 4) * (1 + 4 * r / h);
+        }
+    };
+
+    std::vector<ANNidx>  neighbourIds(knn);
+    std::vector<ANNdist> neighbourSqDist(knn);
+    std::vector<float>   weights(knn);
+    float weightSum;
+    Vec3 weightedCentroid;
+    Vec3 weightedNormal;
+
+    // Variable gaussian kernel
+    float maxDist;
+
+    outputPoint = inputPoint;
+
+    for (unsigned int i = 0; i < nbIterations; i++)
     {
-        const int k = 50;
-        std::array<ANNidx, k> neighbourIds;
-        std::array<ANNdist, k> neighbourSqDist;
+        kdtree.knearest(inputPoint, knn, neighbourIds.data(), neighbourSqDist.data());
 
-        const auto kKernels{
-            // Singular
-            [] (float r) -> float {
+        weightSum = 0.0F;
+        weightedCentroid = { 0.0F, 0.0F, 0.0F };
+        weightedNormal = { 0.0F, 0.0F, 0.0F };
 
-            },
-            // Gaussian
-            [] (float r)  -> float {
+        // Get the maximum distance to adapt the kernel sizes
+        maxDist = std::sqrt(neighbourSqDist[knn - 1]);
 
-            },
-            // Wendland
-            [] (float r)  -> float {
-
-            }
-        }
-
-        for (unsigned int i = 0; i < nbIterations; i++)
+        // Compute the weights, and the sums
+        for (unsigned int k = 0; k < knn; k++)
         {
-            kdtree.knearest(inputPoint, k, neighbourIds.data(), neighbourSqDist.data());
+            Vec3 position = positions[neighbourIds[k]];
+            Vec3 normal = normals[neighbourIds[k]];
+            // Not optimal but needed for wendland support
+            // For gaussian and singular, we can directly use the squared distance
+            float r = std::sqrt(neighbourSqDist[k]);
 
+            weights[k] = kKernels[kernel_type](r, maxDist * radius);
+            weightSum += weights[k];
+
+            // Project the point on the plane defined by (point, normal)
+            weightedCentroid += weights[k] * (outputPoint - Vec3::dot(outputPoint - position, normal) * normal);
+            weightedNormal += weights[k] * normal;
         }
+        
+        weightedNormal.normalize();
+
+        // We can create a project function but we can just inline here because
+        // We don't have a lot of usages
+        outputPoint = weightedCentroid / weightSum;
+        outputNormal = weightedNormal;
     }
+}
+
+void APSS(Vec3 inputPoint, Vec3 &outputPoint, Vec3 &outputNormal, std::vector<Vec3> const &positions,
+    std::vector<Vec3> const &normals, BasicANNkdTree const &kdtree, int kernel_type, float radius, 
+    unsigned int nbIterations = 10, unsigned int knn = 20)
+{
+}
+
+void DisplaceWithNoise(std::vector<Vec3> &positions, const std::vector<Vec3> &normals, float magnitude)
+{
+    for (unsigned int i = 0; i < positions.size(); i++)
+    {
+        // Generate a displacement in [0, 1]
+        float displacement = static_cast<float>(rand()) / static_cast<float>(RAND_MAX);
+        // Remap to [-mag, mag]
+        displacement = magnitude * (2 * displacement - 1);
+        positions[i] += displacement * normals[i]; 
+    }
+}
 
 int main (int argc, char ** argv) {
     if (argc > 2) {
@@ -401,8 +457,15 @@ int main (int argc, char ** argv) {
             positions2[pIt] = 0.6 * positions2[pIt];
         }
 
+        // Noise
+        DisplaceWithNoise(positions, normals, 0.1F);
+
         // PROJECT USING MLS (HPSS and APSS):
-        // TODO
+        std::cout << "Starting HPSS" << std::endl;
+        for (unsigned int i = 0; i < positions2.size(); i++) {
+            HPSS(positions2[i], positions2[i], normals2[i], positions, normals, kdtree, 1, 15.0F);
+        }
+        std::cout << "HPSS Terminated" << std::endl;
     }
 
     glutMainLoop ();
