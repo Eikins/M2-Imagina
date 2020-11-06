@@ -40,6 +40,7 @@ std::vector< Vec3 > normals;
 
 std::vector< Vec3 > positions2;
 std::vector< Vec3 > normals2;
+std::vector<unsigned int> triangles;
 
 
 // -------------------------------------------
@@ -203,9 +204,9 @@ void init () {
 void drawTriangleMesh( std::vector< Vec3 > const & i_positions , std::vector< unsigned int > const & i_triangles ) {
     glBegin(GL_TRIANGLES);
     for(unsigned int tIt = 0 ; tIt < i_triangles.size() / 3 ; ++tIt) {
-        Vec3 p0 = i_positions[3*tIt];
-        Vec3 p1 = i_positions[3*tIt+1];
-        Vec3 p2 = i_positions[3*tIt+2];
+        Vec3 p0 = i_positions[i_triangles[3*tIt]];
+        Vec3 p1 = i_positions[i_triangles[3*tIt+1]];
+        Vec3 p2 = i_positions[i_triangles[3*tIt+2]];
         Vec3 n = Vec3::cross(p1-p0 , p2-p0);
         n.normalize();
         glNormal3f( n[0] , n[1] , n[2] );
@@ -219,28 +220,18 @@ void drawTriangleMesh( std::vector< Vec3 > const & i_positions , std::vector< un
 void drawPointSet( std::vector< Vec3 > const & i_positions , std::vector< Vec3 > const & i_normals ) {
     glBegin(GL_POINTS);
     for(unsigned int pIt = 0 ; pIt < i_positions.size() ; ++pIt) {
-        glNormal3f( i_normals[pIt][0] , i_normals[pIt][1] , i_normals[pIt][2] );
+        glColor3f( i_normals[pIt][0] , i_normals[pIt][1] , i_normals[pIt][2] );
         glVertex3f( i_positions[pIt][0] , i_positions[pIt][1] , i_positions[pIt][2] );
     }
     glEnd();
 }
 
 void draw () {
-    glPointSize(2); // for example...
-
-    glColor3f(0.8,0.8,1);
-    drawPointSet(positions , normals);
-
     glColor3f(1,0.5,0.5);
-    drawPointSet(positions2 , normals2);
+    drawTriangleMesh(positions2, triangles);
+    glPointSize(3);
+    drawPointSet(positions2, normals2);
 }
-
-
-
-
-
-
-
 
 void display () {
     glLoadIdentity ();
@@ -417,6 +408,259 @@ void DisplaceWithNoise(std::vector<Vec3> &positions, const std::vector<Vec3> &no
     }
 }
 
+float SurfaceSDFWithHPSS(
+    Vec3 inputPoint, 
+    std::vector<Vec3> const &positions, 
+    std::vector<Vec3> const &normals, 
+    BasicANNkdTree const &kdtree, 
+    int kernel_type = 1.0, 
+    float radius = 15.0F, 
+    unsigned int nbIterations = 10, 
+    unsigned int knn = 20
+)
+{
+    Vec3 projPos, projNormal;
+    HPSS(inputPoint, projPos, projNormal, positions, normals, kdtree, kernel_type, radius, nbIterations, knn);
+    return Vec3::dot(inputPoint - projPos, projNormal);
+}
+
+#define POINT_INDEX(res, x, y, z) (res) * (res) * (x) + (res) * (y) + (z)
+
+void PointGrid(unsigned res, Vec3 start, Vec3 end, std::vector<Vec3> &outputPoints)
+{
+    outputPoints.resize(res * res * res, Vec3());
+    Vec3 boxSize = end - start;
+
+    for (unsigned x = 0; x < res; x++)
+    {
+        for (unsigned y = 0; y < res; y++)
+        {
+            for (unsigned z = 0; z < res; z++)
+            {
+                Vec3 offset(
+                    x * boxSize[0] / res,
+                    y * boxSize[1] / res,
+                    z * boxSize[2] / res
+                );
+                outputPoints[POINT_INDEX(res, x, y, z)] = start + offset;
+            }   
+        } 
+    }
+}
+
+void DualContouring(
+    unsigned res,
+    Vec3 start,
+    Vec3 end,
+    std::vector<Vec3> &outputPoints,
+    std::vector<Vec3> &outputNormals,
+    std::vector<unsigned int> &outputTriangles,
+    const std::vector<Vec3> &positions,
+    const std::vector<Vec3> &normals,
+    const BasicANNkdTree &kdtree
+)
+{
+    outputPoints.clear();
+    outputNormals.clear();
+    outputTriangles.clear();
+
+    std::vector<Vec3> grid;
+    std::vector<float> sdf;
+    
+    PointGrid(res, start, end, grid);
+
+    // Contains indices of surface points
+    // An empty cell will have an index of -1
+    // This will be used for second pass when we will create faces
+    std::vector<int> cells;
+    cells.resize(grid.size(), -1);
+
+    // Fill with SDF
+    sdf.reserve(grid.size());
+    for (unsigned i = 0; i < grid.size(); i++)
+    {
+        sdf.push_back(SurfaceSDFWithHPSS(grid[i], positions, normals, kdtree));
+    }
+
+    // First pass, compute vertices
+    for (unsigned x = 0; x < res - 1; x++)
+    {
+        for (unsigned y = 0; y < res - 1; y++)
+        {
+            for (unsigned z = 0; z < res - 1; z++)
+            {
+                // For each grid corner
+                std::array<Vec3, 8> cornerPositions = 
+                {
+                    grid[POINT_INDEX(res, x, y, z)],
+                    grid[POINT_INDEX(res, x + 1, y, z)],
+                    grid[POINT_INDEX(res, x, y + 1, z)],
+                    grid[POINT_INDEX(res, x, y, z + 1)],
+                    grid[POINT_INDEX(res, x + 1, y + 1, z)],
+                    grid[POINT_INDEX(res, x, y + 1, z + 1)],
+                    grid[POINT_INDEX(res, x + 1, y, z + 1)],
+                    grid[POINT_INDEX(res, x + 1, y + 1, z + 1)]
+                };
+
+                std::array<float, 8> cornerDistances = 
+                {
+                    sdf[POINT_INDEX(res, x, y, z)],
+                    sdf[POINT_INDEX(res, x + 1, y, z)],
+                    sdf[POINT_INDEX(res, x, y + 1, z)],
+                    sdf[POINT_INDEX(res, x, y, z + 1)],
+                    sdf[POINT_INDEX(res, x + 1, y + 1, z)],
+                    sdf[POINT_INDEX(res, x, y + 1, z + 1)],
+                    sdf[POINT_INDEX(res, x + 1, y, z + 1)],
+                    sdf[POINT_INDEX(res, x + 1, y + 1, z + 1)]
+                };
+
+                // Store corner sdf sign count to check if there is a change
+                unsigned negativeCount = 0;
+                for (unsigned i = 0; i < 8; i++)
+                {
+                    if (cornerDistances[i] <= 0.0F) negativeCount++;
+                }
+
+                if (negativeCount == 0 || negativeCount == 8)
+                {
+                    // If there are no sign change, ignore
+                    continue;
+                }
+
+                Vec3 cellPoint = (cornerPositions[0] + cornerPositions[7]) / 2;
+                Vec3 cellNormal; // Used when performing triangle reconstruction
+                // Optional : project the point on the MLS surface to have a better precision
+                HPSS(cellPoint, cellPoint, cellNormal, positions, normals, kdtree, 1, 15.0F);
+
+                cells[POINT_INDEX(res, x, y, z)] = outputPoints.size();
+
+                outputPoints.push_back(cellPoint);
+                outputNormals.push_back(cellNormal);
+            }   
+        }
+    }
+
+    // Second pass, generate triangles
+    for (unsigned x = 0; x < res - 1; x++)
+    {
+        for (unsigned y = 0; y < res - 1; y++)
+        {
+            for (unsigned z = 0; z < res - 1; z++)
+            {
+                std::array<int, 8> connectedCells = 
+                {
+                    cells[POINT_INDEX(res, x, y, z)],
+                    cells[POINT_INDEX(res, x + 1, y, z)],
+                    cells[POINT_INDEX(res, x, y + 1, z)],
+                    cells[POINT_INDEX(res, x, y, z + 1)],
+                    cells[POINT_INDEX(res, x + 1, y + 1, z)],
+                    cells[POINT_INDEX(res, x, y + 1, z + 1)],
+                    cells[POINT_INDEX(res, x + 1, y, z + 1)],
+                    cells[POINT_INDEX(res, x + 1, y + 1, z + 1)]
+                };
+
+                // On face defines the four neighbours of the edges from the grid
+                // The faces comes from our neighbour indexing
+                //   5 ----- 7
+                //  /|      /|
+                // 3 ----- 6 |
+                // | 2 ----| 4
+                // |/      |/
+                // 0 ----- 1
+                // 
+                // z y
+                // |/
+                // o-- x
+
+                const std::array<std::array<unsigned int, 4>, 6> faces = 
+                {{
+                    {0, 1, 6, 3},
+                    {3, 6, 7, 5},
+                    {2, 4, 7, 5},
+                    {1, 4, 7, 6},
+                    {0, 2, 5, 3},
+                    {0, 1, 4, 2}
+                }};
+
+                for (auto face : faces)
+                {
+                    // For each face, (4 neighbours of an edge)
+                    // If there are 4 points, then connect them
+                    unsigned neighbourCount = 0;
+                    for (unsigned i = 0; i < 4; i++)
+                    {
+                        if (connectedCells[face[i]] != -1)
+                        {
+                            neighbourCount++;
+                        }
+                    }
+
+                    // std::cout << "[" << connectedCells[face[0]] << ", " << connectedCells[face[1]] << ", " << connectedCells[face[2]] << ", " << connectedCells[face[3]] << "]" << std::endl;
+
+                    if (neighbourCount == 4)
+                    {
+                        // Create two triangles, and check they're facing outside using surface normal
+                        unsigned int i0 = connectedCells[face[0]];
+                        unsigned int i1 = connectedCells[face[1]];
+                        unsigned int i2 = connectedCells[face[2]];
+                        unsigned int i3 = connectedCells[face[3]];
+
+                        // First triangle
+                        // Check winding order
+                        // We will use the first vertex normal, we will assume we won't have
+                        // normal discontinuities here
+                        Vec3 n1ref = outputNormals[i0] + outputNormals[i1] + outputNormals[i2];
+                        Vec3 n2ref = outputNormals[i0] + outputNormals[i2] + outputNormals[i3];
+
+                        Vec3 v0 = outputPoints[i0];
+                        Vec3 v1 = outputPoints[i1];
+                        Vec3 v2 = outputPoints[i2];
+                        Vec3 v3 = outputPoints[i3];
+
+                        // First triangle normal
+                        Vec3 n1 = Vec3::cross(v1-v0, v2-v0);
+                        // Second triangle normal
+                        Vec3 n2 = Vec3::cross(v3-v2, v0-v2);
+
+                        // First triangle
+                        if (Vec3::dot(n1, n1ref) >= 0)
+                        {
+                            // Triangle has a good winding order
+                            outputTriangles.push_back(i0);
+                            outputTriangles.push_back(i1);
+                            outputTriangles.push_back(i2);
+                        }
+                        else
+                        {
+                            // Reverse winding order
+                            outputTriangles.push_back(i0);
+                            outputTriangles.push_back(i2);
+                            outputTriangles.push_back(i1);
+                        }
+                        
+                        // Second triangle
+                        if (Vec3::dot(n2, n2ref) >= 0)
+                        {
+                            // Triangle has a good winding order
+                            outputTriangles.push_back(i2);
+                            outputTriangles.push_back(i3);
+                            outputTriangles.push_back(i0);
+                        }
+                        else
+                        {
+                            // Reverse winding order
+                            outputTriangles.push_back(i2);
+                            outputTriangles.push_back(i0);
+                            outputTriangles.push_back(i3);
+                        }
+                    }
+
+                }
+            }
+        }
+    }
+}
+
 int main (int argc, char ** argv) {
     if (argc > 2) {
         exit (EXIT_FAILURE);
@@ -443,29 +687,8 @@ int main (int argc, char ** argv) {
         BasicANNkdTree kdtree;
         kdtree.build(positions);
 
-        // Create a second pointset that is artificial, and project it on pointset1 using MLS techniques:
-        positions2.resize( 20000 );
-        normals2.resize(positions2.size());
-        for(unsigned int pIt = 0; pIt < positions2.size(); ++pIt)
-        {
-            positions2[pIt] = Vec3(
-                -0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX),
-                -0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX),
-                -0.6 + 1.2 * (double)(rand())/(double)(RAND_MAX)
-            );
-            positions2[pIt].normalize();
-            positions2[pIt] = 0.6 * positions2[pIt];
-        }
-
-        // Noise
-        DisplaceWithNoise(positions, normals, 0.1F);
-
-        // PROJECT USING MLS (HPSS and APSS):
-        std::cout << "Starting HPSS" << std::endl;
-        for (unsigned int i = 0; i < positions2.size(); i++) {
-            HPSS(positions2[i], positions2[i], normals2[i], positions, normals, kdtree, 1, 15.0F);
-        }
-        std::cout << "HPSS Terminated" << std::endl;
+        const unsigned gridRes = 16 + 1;
+        DualContouring(gridRes, Vec3(-0.6F, -0.6F, -0.6F), Vec3(0.6F, 0.6F, 0.6F), positions2, normals2, triangles, positions, normals, kdtree);
     }
 
     glutMainLoop ();

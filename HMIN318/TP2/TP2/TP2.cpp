@@ -1,10 +1,19 @@
 #include <iostream>
 #include <cmath>
+#include <array>
 #include <vector>
+#include <sstream>
 
 #include "CImg.h"
 
 using namespace cimg_library;
+
+struct Vec3
+{
+public:
+    float x, y, z;
+    Vec3() : x(0), y(0), z(0) {}
+};
 
 unsigned short GetOtsuThreshold(const CImg<unsigned short> &img)
 {
@@ -52,38 +61,106 @@ unsigned short GetOtsuThreshold(const CImg<unsigned short> &img)
     return threshold;
 }
 
+void ComputeCellBarycenters(
+    CImg<unsigned short>& image,
+    const std::array<float, 3> &voxelSize,
+    std::vector<Vec3> &barycenters
+)
+{
+    // Apply a median filter to remove noise
+    image.blur_median(5);
+    // Automatically threshold with Otsu method
+    // (Implemented in TP 2)
+    image.threshold(GetOtsuThreshold(image));
+
+    // Apply morphological opening to remove bridges
+    image.erode(3);
+    image.dilate(3);
+
+    // Get connected components
+    auto labels = image.get_label();
+
+    barycenters.resize(labels.max() + 1, Vec3());
+    std::vector<unsigned int> barycenterCounts(barycenters.size(), 0);
+
+    image.display("Labels");
+
+    // Compute barycenters
+    cimg_forXYZ(labels, x, y, z)
+    {
+        auto label = labels(x, y, z);
+        barycenterCounts[label]++;
+        barycenters[label].x += x * voxelSize[0];
+        barycenters[label].y += y * voxelSize[1];
+        barycenters[label].z += z * voxelSize[2];
+    }
+
+    for (int i = 0; i < barycenters.size(); i++)
+    {
+        unsigned int count = barycenterCounts[i];
+        if (count > 0)
+        {
+            barycenters[i].x /= count;
+            barycenters[i].y /= count;
+            barycenters[i].z /= count;
+        }
+    }
+}
+
 
 int main(int argc, char** argv)
 {
-	if (argc < 4)
+	if (argc < 3)
 	{
-		std::cerr << "Usage: <erodeCount> <dilateCount>" << std::endl;
+		std::cerr << "Usage: <filename> <image count>" << std::endl;
 		return EXIT_FAILURE;
 	}
 
-	// Load Img
-	CImg<unsigned short> img;
-	float voxelsize[3];
-	img.load_analyze(argv[1], voxelsize);
-	int dim[] = { img.width(), img.height(), img.depth() };
+    unsigned int imageCount = atoi(argv[2]);
 
-    unsigned short threshold = GetOtsuThreshold(img);
-	unsigned int erodeCount = atoi(argv[2]);
-	unsigned int dilateCount = atoi(argv[3]);
+	// Load Images
+	std::vector<CImg<unsigned short>> images(imageCount);
 
-	CImg<unsigned short> binarizedImg = img.get_threshold(threshold);
+	std::array<float, 3> voxelsize;
 
-	for (int i = 0; i < erodeCount; i++)
-	{
-		binarizedImg.erode(2);
-	}
+    for (unsigned int i = 0; i < imageCount; i++)
+    {
+        std::stringstream name;
+        name << argv[1] << "-" << i << ".img";
+        images[i].load_analyze(name.str().c_str(), voxelsize.data());
+    }
 
-	for (int i = 0; i < dilateCount; i++)
-	{
-		binarizedImg.dilate(2);
-	}
+	int dim[] = { images[0].width(), images[0].height(), images[0].depth() };
 
-	binarizedImg.display("Binarized");
+    std::vector<Vec3> barycenters;
+    ComputeCellBarycenters(images[0], voxelsize, barycenters);
+
+    //for (auto vec : barycenters)
+    //{
+    //    std::cout << "(" << vec.x << ", " << vec.y << ", " << vec.z << ")" << std::endl;
+    //}
+
+    //for (unsigned int i = 0; i < imageCount; i++)
+    //{
+
+    //    images[i].display("Stack");
+    //}
+
+    //unsigned short threshold = GetOtsuThreshold(img);
+	//unsigned int erodeCount = atoi(argv[2]);
+	//unsigned int dilateCount = atoi(argv[3]);
+
+	//CImg<unsigned short> binarizedImg = img.get_threshold(threshold);
+
+	//for (int i = 0; i < erodeCount; i++)
+	//{
+	//	binarizedImg.erode(2);
+	//}
+
+	//for (int i = 0; i < dilateCount; i++)
+	//{
+	//	binarizedImg.dilate(2);
+	//}
 
 	return EXIT_SUCCESS;
 }
